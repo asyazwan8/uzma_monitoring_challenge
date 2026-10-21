@@ -1,0 +1,44 @@
+{
+  "name": "uzma-monitoring-challenge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Monitoring Challenge: a Geospatial AI booth game. Count objects in a satellite-style city, answer on your phone.",
+  "scripts": {
+    "dev": "concurrently -k -n next,relay -c auto \"next dev\" \"npm:relay\"",
+    "dev:lan": "concurrently -k -n next,relay -c auto \"next dev -H 0.0.0.0\" \"npm:relay\"",
+    "kiosk": "next build && concurrently -k -n next,relay -c auto \"next start -H 0.0.0.0\" \"npm:relay\"",
+    "relay": "tsx server/relay.ts",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@fontsource/montserrat": "5.3.0",
+    "next": "16.4.2",
+    "qrcode": "1.5.4",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@playwright/test": "1.56.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.5",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/ws": "^8.5.12",
+    "concurrently": "9.2.5",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.2",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}

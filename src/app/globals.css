@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+/* Geospatial AI design tokens (see DESIGN.md). Orange is a highlighter: <=5% of any view. */
+@theme {
+  --color-geo-orange: #f26522;
+  --color-geo-orange-hover: #d9561a;
+  --color-geo-tint: #fde3d5;
+  --color-geo-space: #091926;
+  --color-geo-panel: #182942;
+  --color-geo-steel: #3e606f;
+  --color-geo-slate: #636b7d;
+  --color-geo-ink: #231f20;
+  --color-geo-graphite: #404040;
+  --color-geo-grey: #646466;
+  --color-geo-muted: #b5b7bd;
+  --color-geo-surface: #f5f5f5;
+  --font-sans: "Montserrat", "Segoe UI", Arial, sans-serif;
+}
+
+:root {
+  --geo-orange: #f26522;
+  --geo-space-950: #091926;
+  --geo-space-900: #182942;
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--geo-space-950);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings: uppercase ExtraBold, slightly tracked. */
+.geo-hero {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.02;
+}
+.geo-h {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.geo-kicker {
+  color: var(--geo-orange);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.geo-caption {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* AI detection boxes pop in one after another on reveal. */
+.det-box {
+  opacity: 0;
+  animation: det-pop 360ms cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes det-pop {
+  0% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Satellite pass: a soft orange scanline sweeping the tile. */
+.scan-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 0%, rgba(242, 101, 34, 0) 40%, rgba(242, 101, 34, 0.16) 49.5%, rgba(255, 255, 255, 0.5) 50%, rgba(242, 101, 34, 0.16) 50.5%, rgba(242, 101, 34, 0) 60%, transparent 100%);
+  background-size: 200% 100%;
+  animation: sweep 1.4s ease-out forwards;
+}
+@keyframes sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Idle attract: slow drift across a large tile. */
+.drift {
+  animation: drift 90s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(-14%, -10%, 0) scale(1.18);
+  }
+}
+
+.pulse-soft {
+  animation: pulse-soft 1.8s ease-in-out infinite;
+}
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.rise-in {
+  animation: rise-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.count-pop {
+  animation: count-pop 900ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+@keyframes count-pop {
+  0% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Linear countdown bar; duration set inline. */
+.drain {
+  transform-origin: left center;
+  animation-name: drain;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes drain {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drift,
+  .scan-sweep,
+  .pulse-soft {
+    animation: none;
+  }
+}
