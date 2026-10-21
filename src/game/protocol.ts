@@ -17,8 +17,9 @@ export type PhoneToDisplay =
 export type PhoneView =
   | { screen: "nickname" }
   | { screen: "instructions"; nickname: string }
-  | { screen: "watch"; level: number; tier: Tier; target: TargetKind; stage: "tier" | "intro" | "expose" }
-  | { screen: "answer"; level: number; tier: Tier; target: TargetKind; windowMs: number }
+  | { screen: "watch"; level: number; tier: Tier; target: TargetKind; stage: "tier" | "intro" }
+  /** The live round: the tile is on the big screen while the keypad is open. */
+  | { screen: "answer"; level: number; tier: Tier; target: TargetKind; roundId: number; windowMs: number }
   | {
       screen: "reveal";
       level: number;
@@ -43,7 +44,9 @@ export type PhoneView =
 export type DisplayToPhone =
   | { type: "welcome"; to: string; accepted: true }
   | { type: "welcome"; to: string; accepted: false; reason: "busy" }
-  | { type: "view"; to: string; view: PhoneView };
+  | { type: "view"; to: string; view: PhoneView }
+  /** Sent to a phone that (re)joins mid-round so its keypad timer matches the display. */
+  | { type: "clock"; to: string; roundId: number; elapsedMs: number };
 
 export type GameMessage = PhoneToDisplay | DisplayToPhone;
 

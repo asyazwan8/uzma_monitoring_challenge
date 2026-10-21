@@ -66,16 +66,16 @@ describe("generateCity", () => {
   }
 
   it("is deterministic for the same seed", () => {
-    const a = generateCity({ seed: 42, level: 12, target: "car", count: 16 });
-    const b = generateCity({ seed: 42, level: 12, target: "car", count: 16 });
+    const a = generateCity({ seed: 42, level: 12, target: "car", count: 13 });
+    const b = generateCity({ seed: 42, level: 12, target: "car", count: 13 });
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
-    const c = generateCity({ seed: 43, level: 12, target: "car", count: 16 });
+    const c = generateCity({ seed: 43, level: 12, target: "car", count: 13 });
     expect(JSON.stringify(c)).not.toBe(JSON.stringify(a));
   });
 
   it("never mixes houses into other houses or cars into houses", () => {
     for (const seed of SEEDS) {
-      const scene = generateCity({ seed, level: 18, target: "blueHouse", count: 26 });
+      const scene = generateCity({ seed, level: 20, target: "blueHouse", count: 24 });
       const solids = scene.objects.filter((o) => o.kind === "house" || o.kind === "car" || o.kind === "building");
       const boxes = solids.map(objectBox);
       let clashes = 0;
@@ -86,10 +86,19 @@ describe("generateCity", () => {
     }
   });
 
+  it("zooms in on small grids: Easy tiles are 2x2 blocks, Extreme 3x4", () => {
+    const easy = generateCity({ seed: 9, level: 1, target: "car", count: 3 });
+    const extreme = generateCity({ seed: 9, level: 20, target: "car", count: 24 });
+    expect(easy.blocks).toHaveLength(4);
+    expect(extreme.blocks).toHaveLength(12);
+    expect(easy.width).toBeLessThan(extreme.width);
+    expect(easy.width / easy.height).toBeCloseTo(16 / 9, 1);
+  });
+
   it("only uses look-alike roofs from Hard onwards", () => {
-    const easy = generateCity({ seed: 5, level: 3, target: "blueHouse", count: 5 });
+    const easy = generateCity({ seed: 5, level: 3, target: "blueHouse", count: 4 });
     expect(easy.objects.some((o) => o.kind === "house" && (o.roof === "slate" || o.roof === "teal"))).toBe(false);
-    const hard = generateCity({ seed: 5, level: 13, target: "blueHouse", count: 17 });
+    const hard = generateCity({ seed: 5, level: 13, target: "blueHouse", count: 15 });
     expect(hard.objects.some((o) => o.kind === "house" && (o.roof === "slate" || o.roof === "teal"))).toBe(true);
   });
 });

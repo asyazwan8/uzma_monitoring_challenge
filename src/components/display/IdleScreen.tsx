@@ -2,7 +2,7 @@
 
 import { Wordmark } from "@/components/brand/Wordmark";
 import { TargetIcon } from "@/components/brand/TargetIcon";
-import { TARGET_KINDS, TARGET_LABELS, TIERS } from "@/game/levels";
+import { TARGET_KINDS, TARGET_LABELS, TIERS, gridLabel } from "@/game/levels";
 import { formatScore, pad2 } from "@/lib/format";
 import type { LeaderboardEntry } from "@/leaderboard";
 import { CityBackdrop } from "./CityBackdrop";
@@ -43,7 +43,7 @@ export function IdleScreen({
           <span className="text-geo-orange">Challenge</span>
         </h1>
         <p className="mt-8 max-w-[800px] text-[27px] leading-[1.5] text-white/80">
-          Count what matters from orbit. Twenty levels, four tiers, one question: can you see what our AI sees?
+          Count what matters from orbit. Ten seconds a level, four tiers, one question: can you see what our AI sees?
         </p>
         <div className="mt-10 flex gap-8">
           {TARGET_KINDS.map((k) => (
@@ -59,9 +59,7 @@ export function IdleScreen({
               <span className="rounded-sm border border-white/20 bg-geo-space/60 px-4 py-2 text-[15px] font-extrabold uppercase tracking-[0.12em]">
                 <span className="mr-2 text-geo-orange">{pad2(i + 1)}</span>
                 {t.label}
-                <span className="ml-2 font-semibold text-white/50">
-                  L{t.levels[0]}–{t.levels[1]}
-                </span>
+                <span className="ml-2 font-semibold text-white/50">{gridLabel(t.id)}</span>
               </span>
               {i < TIERS.length - 1 && <span className="h-px w-5 bg-white/25" />}
             </div>

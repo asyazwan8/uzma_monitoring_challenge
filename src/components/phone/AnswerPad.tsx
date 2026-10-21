@@ -9,22 +9,36 @@ import { useNow } from "@/lib/useNow";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "clear", "0", "back"] as const;
 
+/** Elapsed round time reported by the display when this phone (re)joined mid-round. */
+export interface RoundClock {
+  roundId: number;
+  elapsedMs: number;
+  /** Phone wall time when the clock message arrived. */
+  receivedWall: number;
+}
+
 /**
- * Numeric keypad. Reaction time is measured here, from the moment the keypad
- * opens to the tap on SUBMIT, so network latency never counts against the player.
+ * Numeric keypad, open while the tile is on the big screen. Answer time is
+ * measured here, from the keypad opening to the tap on SUBMIT, so network
+ * latency never counts against the player; the display bounds it by its own clock.
  */
 export function AnswerPad({
   view,
+  clock,
   onSubmit,
 }: {
   view: Extract<PhoneView, { screen: "answer" }>;
+  clock: RoundClock | null;
   onSubmit: (value: number, reactionMs: number) => void;
 }) {
   const [value, setValue] = useState("");
   const [submitted, setSubmitted] = useState<number | null>(null);
   const [openedAt] = useState(() => ({ perf: performance.now(), wall: Date.now() }));
   const now = useNow(100);
-  const remaining = Math.max(0, view.windowMs - (now - openedAt.wall));
+  // A keypad that mounted late (phone reloaded mid-round) catches up with the display.
+  const offset =
+    clock && clock.roundId === view.roundId ? Math.max(0, clock.elapsedMs - (clock.receivedWall - openedAt.wall)) : 0;
+  const remaining = Math.max(0, view.windowMs - (now - openedAt.wall) - offset);
   const timedOut = remaining <= 0 && submitted === null;
   const locked = submitted !== null || timedOut;
   const submitLock = useRef(false);
@@ -43,7 +57,7 @@ export function AnswerPad({
     const n = Number(value);
     navigator.vibrate?.(20);
     setSubmitted(n);
-    onSubmit(n, performance.now() - openedAt.perf);
+    onSubmit(n, performance.now() - openedAt.perf + offset);
   };
 
   return (
@@ -51,8 +65,8 @@ export function AnswerPad({
       <div className="flex items-center gap-3">
         <TargetIcon kind={view.target} size={40} className="rounded-[4px]" />
         <div className="min-w-0 flex-1">
-          <p className="geo-caption text-[11px] text-white/60">Level {pad2(view.level)} · How many</p>
-          <p className="geo-h truncate text-[20px] leading-tight">{TARGET_LABELS[view.target].plural}?</p>
+          <p className="geo-caption text-[11px] text-white/60">Level {pad2(view.level)} · On the big screen, count the</p>
+          <p className="geo-h truncate text-[20px] leading-tight">{TARGET_LABELS[view.target].plural}</p>
         </div>
         <p className={`tabular text-[28px] font-extrabold ${remaining < 3000 && !locked ? "text-geo-orange" : ""}`}>
           {Math.ceil(remaining / 1000)}s

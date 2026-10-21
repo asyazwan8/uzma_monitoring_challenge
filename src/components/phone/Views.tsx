@@ -2,7 +2,7 @@
 
 import { TargetIcon } from "@/components/brand/TargetIcon";
 import { TierBadge } from "@/components/brand/TierBadge";
-import { TARGET_HINTS, TARGET_LABELS, TOTAL_LEVELS, tierInfo } from "@/game/levels";
+import { ROUND_MS, TARGET_HINTS, TARGET_LABELS, TOTAL_LEVELS, gridLabel, tierInfo } from "@/game/levels";
 import type { PhoneView } from "@/game/protocol";
 import { AI_BENCHMARK, formatSeconds } from "@/game/scoring";
 import { formatPct, formatScore, pad2 } from "@/lib/format";
@@ -18,9 +18,9 @@ export function StartView({ nickname, onStart }: { nickname: string; onStart: ()
       </h1>
       <ol className="mt-6 space-y-4">
         {[
-          ["Watch", "A city tile flashes on the big screen."],
+          ["Watch", "A city tile appears on the big screen."],
           ["Count", "Count only the target you are given."],
-          ["Answer", "Type the number here. Fast and exact wins."],
+          ["Answer fast", `You have ${ROUND_MS / 1000} seconds. Type the number here while you look. Fast and exact wins.`],
         ].map(([t, d], i) => (
           <li key={t} className="flex gap-4">
             <span className="tabular flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-geo-orange text-[13px] font-extrabold">
@@ -34,7 +34,7 @@ export function StartView({ nickname, onStart }: { nickname: string; onStart: ()
         ))}
       </ol>
       <p className="mt-6 rounded-[4px] border border-white/15 px-4 py-3 text-[14px] text-white/70">
-        20 levels: Easy, Medium, Hard, Extreme. <b className="text-white">One miss ends the run.</b>
+        20 levels: the city grows from 2×2 to 3×4 blocks. <b className="text-white">One miss ends the run.</b>
       </p>
       <button
         onClick={onStart}
@@ -63,6 +63,7 @@ export function WatchView({ view }: { view: ViewOf<"watch"> }) {
           <p className="geo-kicker mt-10 text-[13px]">Tier {pad2(tier.index + 1)} unlocked</p>
           <p className="geo-hero mt-2 text-[48px]">{tier.label}</p>
           <p className="mt-2 text-[16px] text-white/70">{tier.blurb}</p>
+          <p className="geo-caption mt-6 text-[12px] text-white/60">{gridLabel(view.tier)} city blocks · {ROUND_MS / 1000} s per level</p>
         </>
       ) : (
         <>
@@ -70,9 +71,7 @@ export function WatchView({ view }: { view: ViewOf<"watch"> }) {
           <TargetIcon kind={view.target} size={112} className="mt-4 rounded-[8px] ring-1 ring-white/20" />
           <p className="geo-hero mt-4 text-[36px]">{label.plural}</p>
           <p className="mt-2 max-w-[300px] text-[14px] text-white/60">{TARGET_HINTS[view.target]}</p>
-          <p className={`geo-h mt-10 text-[20px] ${view.stage === "expose" ? "pulse-soft text-geo-orange" : "text-white/80"}`}>
-            {view.stage === "expose" ? "Eyes on the big screen" : "Get ready…"}
-          </p>
+          <p className="geo-h pulse-soft mt-10 text-[20px] text-geo-orange">Get ready: answer here while you look</p>
         </>
       )}
     </div>
@@ -117,7 +116,7 @@ export function ResultsView({ view }: { view: ViewOf<"results"> }) {
       <dl className="mt-8 grid grid-cols-2 gap-x-4 gap-y-6">
         {[
           ["Accuracy", formatPct(view.accuracyPct)],
-          ["Avg reaction", formatSeconds(view.avgReactionMs)],
+          ["Avg time", formatSeconds(view.avgReactionMs)],
           ["Levels", `${view.levelsCleared}/${TOTAL_LEVELS}`],
           ["Rank", view.rank ? `#${view.rank}` : "…"],
         ].map(([k, v]) => (

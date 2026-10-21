@@ -1,7 +1,8 @@
 import { randomId } from "@/lib/id";
 import { compareEntries, type LeaderboardEntry, type LeaderboardRepository } from "./repository";
 
-const KEY = "monitoring-challenge:leaderboard:v1";
+// v2: ten-second live rounds. Runs from the v1 timing are not comparable.
+const KEY = "monitoring-challenge:leaderboard:v2";
 const MAX_ENTRIES = 1000;
 
 export function createLocalStorageRepository(storage: Storage = window.localStorage): LeaderboardRepository {

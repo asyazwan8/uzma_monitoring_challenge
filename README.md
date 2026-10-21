@@ -1,16 +1,18 @@
 # The Monitoring Challenge
 
-A booth game for **Geospatial AI** (An Uzma Company). A big screen shows a top-down satellite-style city for a few seconds. Players count one kind of object (blue houses, circular lakes, trees or cars) and type the count on their phone. There are 20 levels in four tiers (Easy, Medium, Hard, Extreme). An exact answer advances, and the first miss ends the run. Points reward accuracy and speed. The end screen compares the player with our AI: **0.00001 s, 100% accuracy**.
+A booth game for **Geospatial AI** (An Uzma Company). A big screen shows a top-down satellite-style city. Players have **10 seconds** to count one kind of object (blue houses, circular lakes, trees or cars) and type the count on their phone while they look. The city grows over 20 levels in four tiers, from **2×2 to 3×4 city blocks**. An exact answer advances, and the first miss or timeout ends the run. Points reward accuracy and speed. The display plays synthesised music and sound effects. The end screen compares the player with our AI: **0.00001 s, 100% accuracy**.
 
 This is a **local proof of concept**. It runs on one laptop plus phones on the same Wi-Fi, with no accounts or cloud services. Realtime messaging and the leaderboard sit behind small interfaces, so the next developer can plug in a hosted service and a database and deploy to Vercel. See [docs/HANDOFF.md](docs/HANDOFF.md).
 
 ![Idle screen](docs/screenshots/01-idle.jpg)
 
-| Tile on screen | AI reveal | Results |
+| Live round (10 s) | AI reveal | Results |
 |---|---|---|
-| ![](docs/screenshots/03-tile.jpg) | ![](docs/screenshots/04-reveal.jpg) | ![](docs/screenshots/05-results.jpg) |
+| ![](docs/screenshots/03-live.jpg) | ![](docs/screenshots/04-reveal.jpg) | ![](docs/screenshots/05-results.jpg) |
 
-![Phone controller](docs/screenshots/07-phone.jpg)
+| Easy 2×2 | Medium 2×3 | Hard 3×3 | Extreme 3×4 | Phone |
+|---|---|---|---|---|
+| ![](docs/screenshots/tier-1-easy-2x2.jpg) | ![](docs/screenshots/tier-2-medium-2x3.jpg) | ![](docs/screenshots/tier-3-hard-3x3.jpg) | ![](docs/screenshots/tier-4-extreme-3x4.jpg) | ![](docs/screenshots/07-phone-live.jpg) |
 
 ## Run it
 
@@ -47,23 +49,41 @@ Open `http://localhost:3000/?transport=broadcast`, then open the URL under the Q
 | `?debug=1` | Shows the true count in the corner and exposes state on `window.__MC__` |
 | `?speed=0.25` | Runs every timer 4× faster |
 | `?transport=broadcast` | Pairs with a phone window in the same browser |
+| `?sound=0` | No music or sound effects |
 
-Press **Esc** on the display to return to the attract screen.
+On the display, press **Esc** to return to the attract screen and **M** to mute or unmute.
+
+### Sound
+
+Music and sound effects are synthesised live with the Web Audio API, so there are no audio files and they work offline. They play from the big screen only; phones stay silent apart from vibration.
+
+Browsers block audio until someone interacts with the page, so:
+
+- **Simplest:** at setup, click once anywhere on the display (or press any key). Sound then stays on for the day, unless the tab reloads. Until then, a small "enable sound" hint shows on the attract screen.
+- **Unattended kiosk:** launch Chrome with autoplay allowed, and sound starts by itself:
+  ```bash
+  google-chrome --kiosk --autoplay-policy=no-user-gesture-required --user-data-dir=$HOME/.mc-kiosk http://localhost:3000
+  ```
+  On a Mac the binary is `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`. The flag is ignored if Chrome is already running with the same profile, which is why the command uses a dedicated `--user-data-dir`.
+
+Tune or audition every cue and music mode at `/dev/audio`.
 
 ## How the game works
 
-| Tier | Levels | Objects | Tile shown | Answer window | Points per level |
-|---|---|---|---|---|---|
-| Easy | 1–5 | 3 → 8 | 8.0 → 6.0 s | 12 s | 100 |
-| Medium | 6–10 | 9 → 14 | 5.5 → 4.5 s | 11 s | 200 |
-| Hard | 11–15 | 15 → 20 | 4.0 → 3.0 s | 10 s | 350 |
-| Extreme | 16–20 | 22 → 31 | 2.5 → 1.5 s | 9 s | 500 |
+Every level is one **10-second live round**. The tile appears on the big screen while the phone keypad is open. Answering ends the round straight away, so a faster exact answer scores more. If the 10 seconds run out, it counts as a miss.
 
-- Each tier also gets a denser city, from 12 to 28 blocks. From Hard onwards, **look-alikes** appear: slate and teal roofs, oval lakes, round plazas and shrubs.
-- **Points per level** = base × accuracy × (50% + 50% × speed). Accuracy is `1 − |answer − truth| / truth`. Speed runs from 1 for an instant answer to 0 when the full window is used.
-- **Reaction time** is measured on the phone, from the keypad opening to SUBMIT, so network lag never counts.
-- **Final accuracy** is the mean accuracy over all rounds played. The average reaction time excludes timeouts.
-- The leaderboard ranks by score, then faster average time.
+| Tier | Levels | City | Zoom (house / car on screen) | Objects | Points per level |
+|---|---|---|---|---|---|
+| Easy | 1–5 | 2×2 blocks | ~57 / 34 px | 2 → 7 | 100 |
+| Medium | 6–10 | 2×3 blocks | ~46 / 27 px | 7 → 12 | 200 |
+| Hard | 11–15 | 3×3 blocks | ~38 / 22 px | 12 → 17 | 350 |
+| Extreme | 16–20 | 3×4 blocks | ~34 / 20 px | 17 → 24 | 500 |
+
+- Difficulty comes from the city: each tier shows more blocks, zoomed out so everything is smaller. From Hard onwards, **look-alikes** appear: slate and teal roofs, oval lakes, round plazas and shrubs.
+- **Points per level** = base × accuracy × (50% + 50% × speed). Accuracy is `1 − |answer − truth| / truth`. Speed runs from 1 for an instant answer to 0 at 10 s. An exact answer therefore earns between half and all of the base. The display shows the "points if exact" draining live.
+- **Answer time** is measured on the phone, from the keypad opening (when the tile appears) to SUBMIT, so network lag never counts. The display bounds it by its own clock, so a reloaded phone or a forged message can't claim an instant answer.
+- **Final accuracy** is the mean accuracy over all rounds played. The average answer time excludes timeouts.
+- The leaderboard ranks by score, then faster average time. Scores are kept per display browser, under a `v2` storage key, so scores from the earlier timing don't mix in.
 
 All of these numbers live in [`src/game/levels.ts`](src/game/levels.ts) and [`src/game/scoring.ts`](src/game/scoring.ts), so they can be tuned after playtesting.
 
@@ -101,6 +121,9 @@ src/realtime/              Transport interface + ws / BroadcastChannel adapters
 src/leaderboard/           LeaderboardRepository interface + localStorage store
 src/components/display/    display screens and the game host hook
 src/components/phone/      phone screens and keypad
+src/audio/                 Web Audio engine, synthesised SFX and music, pure cue mapping, display hook
+src/app/dev/audio/         audio lab: audition every cue and music mode
+scripts/                   capture-screenshots.mjs (regenerates docs/screenshots)
 docs/DESIGN.md             Geospatial AI design system the UI follows
 docs/HANDOFF.md            how to connect a database / realtime service and deploy
 ```
@@ -110,8 +133,10 @@ docs/HANDOFF.md            how to connect a database / realtime service and depl
 ```bash
 npm run typecheck
 npm run lint
-npm test               # Vitest: generator exact counts and overlaps, levels, scoring, state machine
-npm run e2e            # Playwright: full run display + phone, busy-room rejection
+npm test               # Vitest: generator exact counts and overlaps, levels, scoring, state machine, audio cues
+npm run e2e            # Playwright: full run, timeout run, busy room, offline audio renders and autoplay
 ```
+
+To refresh the README screenshots, start the app (`npm run dev:lan`) and run `node scripts/capture-screenshots.mjs`.
 
 `npm run e2e` starts its own dev server on port 3100. If Chromium is installed somewhere non-standard, set `CHROMIUM_PATH=/path/to/chrome`.

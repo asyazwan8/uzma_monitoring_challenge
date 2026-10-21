@@ -64,8 +64,12 @@ export function useGameHost({ timeScale }: HostOptions): GameHost {
           }
           dispatch({ type: "phoneJoined", clientId: msg.clientId, now });
           transport.send({ type: "welcome", to: msg.clientId, accepted: true });
-          // A rejoining phone gets its current screen straight away.
+          // A rejoining phone gets its current screen straight away, and mid-round
+          // the elapsed time so its keypad timer matches this screen.
           sendView();
+          if (current.phase === "live" && current.player?.clientId === msg.clientId) {
+            transport.send({ type: "clock", to: msg.clientId, roundId: current.phaseStartedAt, elapsedMs: now - current.phaseStartedAt });
+          }
           return;
         }
         case "ready":

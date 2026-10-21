@@ -1,5 +1,6 @@
 import { createRng, hashSeed } from "@/lib/rng";
 import {
+  ROUND_MS,
   TARGET_KINDS,
   TOTAL_LEVELS,
   levelConfig,
@@ -14,8 +15,11 @@ import { roundAccuracy, roundPoints, speedFactor, summarise, type RoundResult } 
  * Pure state machine for the display (the game host). Time only enters through
  * the `now` carried on each action, so every transition is unit-testable.
  *
- * idle -> lobby -> instructions -> [tier] -> intro -> expose -> answer -> reveal
+ * idle -> lobby -> instructions -> [tier] -> intro -> live -> reveal
  *      -> ([tier] -> intro ...) | results -> leaderboard -> idle
+ *
+ * `live` is the 10-second round: the tile is on screen and the phone keypad is
+ * open at the same time. An answer ends it early; running out of time is a miss.
  */
 
 export type PhaseName =
@@ -24,8 +28,7 @@ export type PhaseName =
   | "instructions"
   | "tier"
   | "intro"
-  | "expose"
-  | "answer"
+  | "live"
   | "reveal"
   | "results"
   | "leaderboard";
@@ -35,8 +38,13 @@ export const TIMINGS = {
   introMs: 3000,
   revealCorrectMs: 4500,
   revealMissMs: 6500,
-  /** Phones get the keypad slightly after the display opens the window. */
+  /**
+   * Real time an answer may still arrive after the 10 s window closes, covering
+   * network delay between phone and display. Not scaled by timeScale.
+   */
   answerGraceMs: 1500,
+  /** How much earlier than the display's clock a phone may claim it answered. */
+  latencyAllowanceMs: 1500,
   resultsMs: 16000,
   leaderboardMs: 14000,
   /** A joined phone that never presses START is dropped after this long. */
@@ -145,10 +153,8 @@ export function phaseDurationMs(state: GameState): number | null {
       return TIMINGS.tierMs * s;
     case "intro":
       return TIMINGS.introMs * s;
-    case "expose":
-      return state.round!.config.exposureMs * s;
-    case "answer":
-      return state.round!.config.answerWindowMs * s + TIMINGS.answerGraceMs;
+    case "live":
+      return liveWindowMs(state) + TIMINGS.answerGraceMs;
     case "reveal":
       return (lastResult(state)?.correct ? TIMINGS.revealCorrectMs : TIMINGS.revealMissMs) * s;
     case "results":
@@ -161,6 +167,11 @@ export function phaseDurationMs(state: GameState): number | null {
     default:
       return null;
   }
+}
+
+/** The visible 10 s window of the live phase, in real (scaled) milliseconds. */
+export function liveWindowMs(state: Pick<GameState, "timeScale">): number {
+  return ROUND_MS * state.timeScale;
 }
 
 export function lastResult(state: GameState): RoundResult | null {
@@ -184,10 +195,24 @@ function isCurrentPlayer(state: GameState, clientId: string): boolean {
   return state.player?.clientId === clientId;
 }
 
+/**
+ * Answer time in game milliseconds (0..ROUND_MS). The phone measures it, which
+ * keeps network delay out, but the display's own clock bounds it: a phone that
+ * reloaded mid-round, or a forged message, cannot claim to have answered much
+ * sooner than the display saw. Under timeScale < 1 the value is scaled back so
+ * test runs score like real ones.
+ */
+export function boundedReactionMs(state: GameState, phoneReactionMs: number, now: number): number {
+  const elapsed = Math.max(0, now - state.phaseStartedAt);
+  const lower = Math.max(0, elapsed - TIMINGS.latencyAllowanceMs);
+  const real = Math.min(elapsed, Math.max(lower, Number.isFinite(phoneReactionMs) ? phoneReactionMs : elapsed));
+  return Math.round(Math.min(ROUND_MS, real / state.timeScale));
+}
+
 function resolveAnswer(state: GameState, value: number | null, reactionMs: number | null, now: number): GameState {
   const round = state.round!;
   const window = round.config.answerWindowMs;
-  const clampedReaction = reactionMs === null ? null : Math.max(0, Math.min(window, Math.round(reactionMs)));
+  const clampedReaction = reactionMs === null ? null : boundedReactionMs(state, reactionMs, now);
   const accuracy = roundAccuracy(value, round.count);
   const points = roundPoints(round.config.basePoints, accuracy, speedFactor(clampedReaction, window));
   const result: RoundResult = {
@@ -210,10 +235,8 @@ function advance(state: GameState, now: number): GameState {
     case "tier":
       return enter(state, "intro", now);
     case "intro":
-      return enter(state, "expose", now);
-    case "expose":
-      return enter(state, "answer", now);
-    case "answer":
+      return enter(state, "live", now);
+    case "live":
       return resolveAnswer(state, null, null, now);
     case "reveal": {
       const result = lastResult(state)!;
@@ -267,7 +290,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
       });
     }
     case "phoneAnswer": {
-      if (!isCurrentPlayer(state, action.clientId) || state.phase !== "answer") return state;
+      if (!isCurrentPlayer(state, action.clientId) || state.phase !== "live") return state;
       if (action.level !== state.round?.level) return state;
       if (!Number.isFinite(action.value) || action.value < 0) return state;
       return resolveAnswer(state, Math.floor(action.value), action.reactionMs, action.now);
@@ -315,15 +338,16 @@ export function phoneViewFor(state: GameState): PhoneView {
       return { screen: "instructions", nickname: state.player?.nickname ?? "" };
     case "tier":
     case "intro":
-    case "expose":
       return { screen: "watch", level: round!.level, tier: round!.config.tier, target: round!.target, stage: state.phase };
-    case "answer":
+    case "live":
+      // Constant for the whole round, so heartbeat re-sends never reset the keypad.
       return {
         screen: "answer",
         level: round!.level,
         tier: round!.config.tier,
         target: round!.target,
-        windowMs: round!.config.answerWindowMs * state.timeScale,
+        roundId: state.phaseStartedAt,
+        windowMs: liveWindowMs(state),
       };
     case "reveal": {
       const result = lastResult(state)!;

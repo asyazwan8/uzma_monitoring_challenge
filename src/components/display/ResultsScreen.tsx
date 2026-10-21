@@ -62,7 +62,7 @@ export function ResultsScreen({
             Your accuracy was <span className="tabular font-extrabold">{formatPct(summary.accuracyPct)}</span>
           </p>
           <p className="text-[40px] font-bold leading-tight" data-testid="final-reaction">
-            Your average reaction time was <span className="tabular font-extrabold">{formatSeconds(summary.avgReactionMs)}</span>
+            Your average answer time was <span className="tabular font-extrabold">{formatSeconds(summary.avgReactionMs)}</span>
           </p>
         </div>
       </section>

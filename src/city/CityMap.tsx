@@ -20,6 +20,8 @@ export interface CityMapProps {
   scene: CityScene;
   className?: string;
   preserveAspectRatio?: string;
+  /** Corner darkening, 0..1. Kept low while players count so no target hides in the corners. */
+  vignette?: number;
 }
 
 export function SpriteDefs({ ids }: { ids: SpriteIds }) {
@@ -150,7 +152,7 @@ function shadowFor(o: CityObject, k: number): React.ReactNode {
   }
 }
 
-function CityMapImpl({ scene, className, preserveAspectRatio = "xMidYMid slice" }: CityMapProps) {
+function CityMapImpl({ scene, className, preserveAspectRatio = "xMidYMid slice", vignette = 0.38 }: CityMapProps) {
   const uid = useId();
   const ids = makeSpriteIds(`c${uid}`);
   const shadowId = `${ids.water}-shadow`;
@@ -183,7 +185,7 @@ function CityMapImpl({ scene, className, preserveAspectRatio = "xMidYMid slice" 
         </filter>
         <radialGradient id={vignetteId} cx="50%" cy="50%" r="75%">
           <stop offset="60%" stopColor="#091926" stopOpacity="0" />
-          <stop offset="100%" stopColor="#091926" stopOpacity="0.38" />
+          <stop offset="100%" stopColor="#091926" stopOpacity={vignette} />
         </radialGradient>
         <pattern id={mowId} width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
           <rect width="5" height="10" fill="#FFFFFF" opacity="0.045" />
@@ -297,7 +299,7 @@ export function DetectionLayer({
   preserveAspectRatio = "xMidYMid slice",
 }: DetectionLayerProps) {
   const unit = scene.width / renderWidthPx;
-  const labelW = (label: string) => (label.length + 6) * 5.6 * unit;
+  const labelW = (label: string) => (label.length + 6) * 7.4 * unit;
   const showLabels = scene.detections.length <= maxLabels;
   return (
     <svg className={className} viewBox={`0 0 ${scene.width} ${scene.height}`} preserveAspectRatio={preserveAspectRatio} aria-hidden>
@@ -317,14 +319,14 @@ export function DetectionLayer({
           {showLabels && (
             <g
               transform={`translate(${Math.min(d.box.x, scene.width - labelW(d.label))} ${
-                d.box.y < 12 * unit ? d.box.y + d.box.h + 11.5 * unit : d.box.y - 1
+                d.box.y < 16 * unit ? d.box.y + d.box.h + 15 * unit : d.box.y - 1
               })`}
             >
-              <rect x={0} y={-10.5 * unit} width={labelW(d.label)} height={10.5 * unit} fill="#F26522" />
+              <rect x={0} y={-14 * unit} width={labelW(d.label)} height={14 * unit} fill="#F26522" />
               <text
-                x={3 * unit}
-                y={-2.8 * unit}
-                fontSize={7.6 * unit}
+                x={4 * unit}
+                y={-3.8 * unit}
+                fontSize={10 * unit}
                 fontWeight={700}
                 fill="#FFFFFF"
                 fontFamily="Montserrat, Arial, sans-serif"

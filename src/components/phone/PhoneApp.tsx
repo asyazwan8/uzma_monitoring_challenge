@@ -5,7 +5,7 @@ import { Wordmark } from "@/components/brand/Wordmark";
 import { HEARTBEAT_MS, type PhoneToDisplay, type PhoneView } from "@/game/protocol";
 import { randomId } from "@/lib/id";
 import { createTransport, relayUrl, transportKind, type Transport } from "@/realtime";
-import { AnswerPad } from "./AnswerPad";
+import { AnswerPad, type RoundClock } from "./AnswerPad";
 import { NicknameForm } from "./NicknameForm";
 import { ResultsView, RevealView, StartView, WatchView } from "./Views";
 
@@ -30,6 +30,7 @@ export function PhoneApp({ room }: { room: string }) {
   const [clientId] = useState(() => clientIdFor(room));
   const [status, setStatus] = useState<Status>("connecting");
   const [view, setView] = useState<PhoneView | null>(null);
+  const [clock, setClock] = useState<RoundClock | null>(null);
   const [slow, setSlow] = useState(false);
   const transportRef = useRef<Transport | null>(null);
 
@@ -52,6 +53,8 @@ export function PhoneApp({ room }: { room: string }) {
         welcomed = true;
         setStatus("accepted");
         setView((prev) => (prev && JSON.stringify(prev) === JSON.stringify(msg.view) ? prev : msg.view));
+      } else if (msg.type === "clock" && msg.to === clientId) {
+        setClock({ roundId: msg.roundId, elapsedMs: msg.elapsedMs, receivedWall: Date.now() });
       }
     });
     const slowTimer = setTimeout(() => setSlow(true), 5000);
@@ -121,8 +124,9 @@ export function PhoneApp({ room }: { room: string }) {
       case "answer":
         body = (
           <AnswerPad
-            key={`answer-${view.level}`}
+            key={`answer-${view.roundId}`}
             view={view}
+            clock={clock}
             onSubmit={(value, reactionMs) => send({ type: "answer", level: view.level, value, reactionMs })}
           />
         );

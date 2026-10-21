@@ -1,4 +1,4 @@
-import type { TargetKind, Tier } from "./levels";
+import { ROUND_MS, type TargetKind, type Tier } from "./levels";
 
 export interface RoundResult {
   level: number;
@@ -7,7 +7,10 @@ export interface RoundResult {
   truth: number;
   /** null when the answer window ran out. */
   answer: number | null;
-  /** Time from keypad opening to submit, measured on the phone. null on timeout. */
+  /**
+   * Time from the tile appearing (the keypad opening) to submit: measured on the
+   * phone, bounded by the display's clock. null on timeout.
+   */
   reactionMs: number | null;
   answerWindowMs: number;
   accuracy: number;
@@ -35,13 +38,21 @@ export function roundPoints(basePoints: number, accuracy: number, speed: number)
   return Math.round(basePoints * accuracy * (0.5 + 0.5 * speed));
 }
 
+/**
+ * Points an exact answer would earn after `elapsedMs` of the live window: the
+ * full base at the start, draining to half the base when time runs out.
+ */
+export function livePoints(basePoints: number, elapsedMs: number, windowMs = ROUND_MS): number {
+  return roundPoints(basePoints, 1, speedFactor(Math.max(0, elapsedMs), windowMs));
+}
+
 export interface RunSummary {
   score: number;
   levelsCleared: number;
   roundsPlayed: number;
   /** Mean round accuracy, 0..100 with one decimal. */
   accuracyPct: number;
-  /** Mean reaction over answered rounds, null if none answered. */
+  /** Mean answer time over answered rounds, null if none answered. */
   avgReactionMs: number | null;
   completed: boolean;
 }

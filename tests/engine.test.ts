@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   TIMINGS,
+  boundedReactionMs,
   createInitialState,
   phaseDurationMs,
   phoneViewFor,
@@ -9,7 +10,7 @@ import {
   type GameAction,
   type GameState,
 } from "@/game/engine";
-import { TARGET_KINDS } from "@/game/levels";
+import { ROUND_MS, TARGET_KINDS } from "@/game/levels";
 
 const PHONE = "phone-1";
 
@@ -35,8 +36,8 @@ function started(): GameState {
   return s;
 }
 
-function toAnswer(s: GameState): GameState {
-  while (s.phase !== "answer") s = finishPhase(s);
+function toLive(s: GameState): GameState {
+  while (s.phase !== "live") s = finishPhase(s);
   return s;
 }
 
@@ -69,8 +70,15 @@ describe("engine", () => {
   });
 
   it("advances on an exact answer and ends on a miss", () => {
-    let s = toAnswer(started());
-    expect(phoneViewFor(s)).toMatchObject({ screen: "answer", level: 1 });
+    let s = toLive(started());
+    expect(phoneViewFor(s)).toEqual({
+      screen: "answer",
+      level: 1,
+      tier: "easy",
+      target: s.round!.target,
+      roundId: s.phaseStartedAt,
+      windowMs: ROUND_MS,
+    });
     s = answer(s, s.round!.count);
     expect(s.phase).toBe("reveal");
     expect(s.history[0].correct).toBe(true);
@@ -79,7 +87,7 @@ describe("engine", () => {
     expect(s.phase).toBe("intro");
     expect(s.round!.level).toBe(2);
 
-    s = toAnswer(s);
+    s = toLive(s);
     s = answer(s, s.round!.count + 1);
     expect(s.history[1].correct).toBe(false);
     expect(phoneViewFor(s)).toMatchObject({ screen: "reveal", gameOver: true });
@@ -93,16 +101,84 @@ describe("engine", () => {
     expect(s.session).toBe(1);
   });
 
+  it("goes straight from the intro countdown to the live round", () => {
+    let s = started();
+    const phases: string[] = [s.phase];
+    while (s.phase !== "live") {
+      s = finishPhase(s);
+      phases.push(s.phase);
+    }
+    expect(phases).toEqual(["tier", "intro", "live"]);
+    expect(phaseDurationMs(s)).toBe(ROUND_MS + TIMINGS.answerGraceMs);
+    const intro = finishPhase(started());
+    expect(phoneViewFor(intro)).toMatchObject({ screen: "watch", stage: "intro" });
+    expect(phoneViewFor(started())).toMatchObject({ screen: "watch", stage: "tier" });
+  });
+
+  it("ends the live round as soon as the phone answers", () => {
+    const s = toLive(started());
+    const after = answer(s, s.round!.count, 2000);
+    expect(after.phase).toBe("reveal");
+    expect(after.phaseStartedAt).toBe(s.phaseStartedAt + 2000);
+    expect(after.history[0].reactionMs).toBe(2000);
+  });
+
+  it("accepts answers until the grace period ends, then the round is a miss", () => {
+    const s = toLive(started());
+    const lastMoment = s.phaseStartedAt + ROUND_MS + TIMINGS.answerGraceMs - 1;
+    const late = reducer(s, { type: "phoneAnswer", clientId: PHONE, level: 1, value: s.round!.count, reactionMs: 9900, now: lastMoment });
+    expect(late.phase).toBe("reveal");
+    expect(late.history[0].correct).toBe(true);
+    // Bounded below by the display clock minus the latency allowance.
+    expect(late.history[0].reactionMs).toBe(ROUND_MS + TIMINGS.answerGraceMs - 1 - TIMINGS.latencyAllowanceMs);
+    const ticked = reducer(s, { type: "tick", now: lastMoment + 1 });
+    expect(ticked.phase).toBe("reveal");
+    const ignored = reducer(ticked, { type: "phoneAnswer", clientId: PHONE, level: 1, value: s.round!.count, reactionMs: 9900, now: lastMoment + 2 });
+    expect(ignored).toBe(ticked);
+  });
+
+  it("bounds the phone's answer time by the display clock", () => {
+    const s = toLive(started());
+    // A forged or reset phone clock cannot claim an instant answer 8 s in.
+    expect(boundedReactionMs(s, 0, s.phaseStartedAt + 8000)).toBe(8000 - TIMINGS.latencyAllowanceMs);
+    // Network delay up to the allowance is forgiven.
+    expect(boundedReactionMs(s, 2000, s.phaseStartedAt + 3000)).toBe(2000);
+    // A phone cannot report more time than has passed, or more than the window.
+    expect(boundedReactionMs(s, 5000, s.phaseStartedAt + 3000)).toBe(3000);
+    expect(boundedReactionMs(s, 20000, s.phaseStartedAt + 11000)).toBe(ROUND_MS);
+    expect(boundedReactionMs(s, Number.NaN, s.phaseStartedAt + 4000)).toBe(4000);
+  });
+
+  it("scores test-speed runs like real ones", () => {
+    const s = toLive({ ...started(), timeScale: 0.25 });
+    const after = answer(s, s.round!.count, 1000);
+    // 1 s at quarter speed is 4 s of game time.
+    expect(after.history[0].reactionMs).toBe(4000);
+    expect(phoneViewFor(s)).toMatchObject({ screen: "answer", windowMs: ROUND_MS * 0.25 });
+  });
+
+  it("keeps the round clock when the phone pings or rejoins mid-round", () => {
+    const s = toLive(started());
+    const seen = reducer(s, { type: "phoneSeen", clientId: PHONE, now: s.phaseStartedAt + 3000 });
+    const rejoined = reducer(seen, { type: "phoneJoined", clientId: PHONE, now: s.phaseStartedAt + 4000 });
+    for (const x of [seen, rejoined]) {
+      expect(x.phase).toBe("live");
+      expect(x.phaseStartedAt).toBe(s.phaseStartedAt);
+      expect(phoneViewFor(x)).toEqual(phoneViewFor(s));
+    }
+  });
+
   it("treats an expired answer window as a miss", () => {
-    let s = toAnswer(started());
+    let s = toLive(started());
     s = finishPhase(s);
     expect(s.phase).toBe("reveal");
     expect(s.history[0]).toMatchObject({ answer: null, reactionMs: null, accuracy: 0, points: 0, correct: false });
   });
 
   it("ignores answers for the wrong level or outside the answer phase", () => {
-    const s = toAnswer(started());
+    const s = toLive(started());
     expect(reducer(s, { type: "phoneAnswer", clientId: PHONE, level: 7, value: 1, reactionMs: 1, now: 1 })).toBe(s);
+    expect(reducer(s, { type: "phoneAnswer", clientId: PHONE, level: 0, value: 1, reactionMs: 1, now: 1 })).toBe(s);
     const intro = finishPhase(started());
     expect(reducer(intro, { type: "phoneAnswer", clientId: PHONE, level: 1, value: 1, reactionMs: 1, now: 1 })).toBe(intro);
   });
@@ -112,7 +188,7 @@ describe("engine", () => {
     const banners: number[] = [];
     for (let level = 1; level <= 20; level++) {
       if (s.phase === "tier") banners.push(s.round!.level);
-      s = toAnswer(s);
+      s = toLive(s);
       s = answer(s, s.round!.count);
       s = finishPhase(s);
     }
@@ -129,9 +205,9 @@ describe("engine", () => {
   });
 
   it("keeps a run going when the transport blips", () => {
-    let s = toAnswer(started());
+    let s = toLive(started());
     s = reducer(s, { type: "phoneLeft", clientId: PHONE, explicit: false, now: s.phaseStartedAt + 10 });
-    expect(s.phase).toBe("answer");
+    expect(s.phase).toBe("live");
     expect(s.player?.connected).toBe(false);
     s = reducer(s, { type: "phoneJoined", clientId: PHONE, now: s.phaseStartedAt + 20 });
     expect(s.player?.connected).toBe(true);

@@ -332,7 +332,7 @@ function planPark(block: Block, rng: Rng): BlockPlan {
   }
   const nearPath = (c: Circle, gap: number) => segs.some((s) => distToSegment(c.cx, c.cy, s) < c.r + gap);
 
-  const maxLakes = clamp(Math.floor((g.w * g.h) / 7500), 1, 6);
+  const maxLakes = clamp(Math.floor((g.w * g.h) / 6000), 1, 6);
   const maxR = Math.min(30, Math.min(g.w, g.h) * 0.3);
   for (let i = 0; i < 80 && plan.lakes.length < maxLakes; i++) {
     const r = rng.range(16, Math.max(17, maxR));
@@ -629,7 +629,7 @@ export function generateCity(opts: GenerateOptions): CityScene {
 
   // Lay out blocks, converting more blocks to the target's carrier use until
   // there are enough slots for the true count plus its distractors.
-  const lakeDistractors = Math.round(count * density.distractorRatio * 0.25);
+  const lakeDistractors = Math.round(count * density.distractorRatio * 0.17);
   const required = target === "circleLake" ? count + lakeDistractors : Math.ceil(count * 1.3);
   const slotCount = (plans: BlockPlan[]) => {
     switch (target) {

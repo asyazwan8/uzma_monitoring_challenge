@@ -1,13 +1,16 @@
 import { Wordmark } from "@/components/brand/Wordmark";
 import { TargetIcon } from "@/components/brand/TargetIcon";
-import { LEVELS, TARGET_KINDS, TARGET_LABELS, TIERS } from "@/game/levels";
+import { LEVELS, ROUND_MS, TARGET_KINDS, TARGET_LABELS, TIERS, gridLabel } from "@/game/levels";
 import { pad2 } from "@/lib/format";
 import { CityBackdrop } from "./CityBackdrop";
 
 const STEPS = [
-  { title: "Watch", body: "A satellite tile of the city appears on this screen for a few seconds." },
+  { title: "Watch", body: "A satellite tile of the city appears on this screen." },
   { title: "Count", body: "Count only the target you are given. Look-alikes do not count." },
-  { title: "Answer", body: "Type the number on your phone. Exact answers advance; faster answers score more." },
+  {
+    title: "Answer fast",
+    body: `You have ${ROUND_MS / 1000} seconds. Type the number on your phone while you look. Faster exact answers score more.`,
+  },
 ];
 
 export function InstructionsScreen({ nickname, backdropSeed }: { nickname: string; backdropSeed: number }) {
@@ -49,7 +52,7 @@ export function InstructionsScreen({ nickname, backdropSeed }: { nickname: strin
                   </p>
                   <p className="geo-h mt-1 text-[30px]">{t.label}</p>
                   <p className="tabular mt-2 text-[17px] text-white/70">
-                    {first.count[0]}–{last.count[1]} objects · {(first.exposureMs / 1000).toFixed(1)}–{(last.exposureMs / 1000).toFixed(1)} s
+                    {gridLabel(t.id)} city blocks · {first.count[0]}–{last.count[1]} objects
                   </p>
                 </div>
               );

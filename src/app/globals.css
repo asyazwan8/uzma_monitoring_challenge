@@ -77,21 +77,21 @@ body {
   }
 }
 
-/* Satellite pass: a soft orange scanline sweeping the tile. */
-.scan-sweep {
+/* "Tile acquiring": a narrow scan line crossing the intro card just before the tile appears. */
+.scan-line {
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: -160px;
+  width: 160px;
   pointer-events: none;
-  background: linear-gradient(90deg, transparent 0%, rgba(242, 101, 34, 0) 40%, rgba(242, 101, 34, 0.16) 49.5%, rgba(255, 255, 255, 0.5) 50%, rgba(242, 101, 34, 0.16) 50.5%, rgba(242, 101, 34, 0) 60%, transparent 100%);
-  background-size: 200% 100%;
-  animation: sweep 1.4s ease-out forwards;
+  background: linear-gradient(90deg, transparent 0%, rgba(242, 101, 34, 0.2) 45%, rgba(255, 255, 255, 0.6) 50%, rgba(242, 101, 34, 0.2) 55%, transparent 100%);
+  animation: scan-x 600ms ease-in forwards;
+  will-change: transform;
 }
-@keyframes sweep {
-  from {
-    background-position: 100% 0;
-  }
+@keyframes scan-x {
   to {
-    background-position: -100% 0;
+    transform: translateX(1760px);
   }
 }
 
@@ -171,7 +171,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .drift,
-  .scan-sweep,
+  .scan-line,
   .pulse-soft {
     animation: none;
   }

@@ -42,7 +42,7 @@ Suggested steps:
    - Rank on insert: `select count(*) + 1 from leaderboard where score > $1 or (score = $1 and avg_reaction_ms < $2)` (or equivalent).
    - Keep database credentials server-side. The browser should only call your API route.
 3. Implement `createApiRepository()` that `fetch`es those routes, and return it from `createLeaderboard()` in [`src/leaderboard/index.ts`](../src/leaderboard/index.ts).
-4. **Anti-cheat note.** Scores are computed on the display, not the phone, so a phone cannot forge a score. A public `POST` route can still be called by anyone, though. Protect it, for example with a shared kiosk secret in a header, a Vercel Firewall rule, or by only accepting writes from the booth's network.
+4. **Anti-cheat note.** Scores are computed on the display, not the phone. The phone reports only its answer and answer time, and the display bounds that time by its own clock (`boundedReactionMs` in `src/game/engine.ts`), so a phone can't claim an instant answer. A public `POST` route can still be called by anyone, though. Protect it, for example with a shared kiosk secret in a header, a Vercel Firewall rule, or by only accepting writes from the booth's network.
 
 ## 2. Realtime transport
 
@@ -102,7 +102,8 @@ Register it in [`src/realtime/index.ts`](../src/realtime/index.ts), for example 
 
 ## Useful seams
 
-- **Tuning:** [`src/game/levels.ts`](../src/game/levels.ts) holds counts, viewing times, answer windows, points and city density per level. The tests in `tests/levels.test.ts` enforce "harder every level, clear jump every five levels".
+- **Tuning:** [`src/game/levels.ts`](../src/game/levels.ts) holds the 10 s round (`ROUND_MS`), counts, points, and each tier's city grid and zoom. The tests in `tests/levels.test.ts` enforce "more objects every level; bigger grid, smaller objects and more points every five levels".
+- **Sound:** [`src/audio/`](../src/audio) holds the cues. `cues.ts` is a pure mapping from game transitions to timed cues and is unit-tested. `sfx.ts` and `music.ts` hold the synth voices and the generative score, and `/dev/audio` auditions them. It plays on the display only. To use recorded files instead, keep `cues.ts` and swap the voice functions for buffer playback.
 - **New targets:** add a kind to `TargetKind`, a carrier land use and fill rule in `src/city/generate.ts`, a sprite, and labels. The generator test automatically covers every target × level.
 - **Game flow and timings:** [`src/game/engine.ts`](../src/game/engine.ts) is a pure reducer (`TIMINGS` at the top), fully unit-tested in `tests/engine.test.ts`.
 - **Design system:** [`docs/DESIGN.md`](DESIGN.md). Tokens are in `src/app/globals.css`, and map-only colours are in `src/city/palette.ts`.

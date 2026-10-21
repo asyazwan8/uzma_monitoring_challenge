@@ -24,9 +24,11 @@ declare global {
 export interface DisplayAppProps {
   debug: boolean;
   timeScale: number;
+  /** Music and sound effects (off with ?sound=0). */
+  sound: boolean;
 }
 
-export function DisplayApp({ debug, timeScale }: DisplayAppProps) {
+export function DisplayApp({ debug, timeScale, sound }: DisplayAppProps) {
   const { state, board, lastEntry, reset, transportStatus } = useGameHost({ timeScale });
   const [base, setBase] = useState<string | null>(null);
   const now = useNow(1000);
