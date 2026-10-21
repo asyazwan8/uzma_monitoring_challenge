@@ -6,20 +6,22 @@ export function createBroadcastTransport(room: string, role: Role): Transport {
   const channel = new BroadcastChannel(`monitoring-challenge:${room}`);
   const messages = listeners<GameMessage>();
   const statuses = listeners<TransportStatus>();
+  let closed = false;
   channel.onmessage = (event: MessageEvent<{ role: Role; data: GameMessage }>) => {
     if (event.data?.role !== role) messages.emit(event.data.data);
   };
   return {
     kind: "broadcast",
     send(message) {
-      channel.postMessage({ role, data: message });
+      if (!closed) channel.postMessage({ role, data: message });
     },
     onMessage: messages.add,
     onStatus(handler) {
-      queueMicrotask(() => handler("open"));
+      queueMicrotask(() => !closed && handler("open"));
       return statuses.add(handler);
     },
     close() {
+      closed = true;
       channel.close();
       messages.clear();
       statuses.clear();

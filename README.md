@@ -28,6 +28,14 @@ For the booth itself, run `npm run kiosk`. It makes a production build, then sta
 
 **Venue Wi-Fi tip:** guest networks often block device-to-device traffic. Use the laptop's hotspot or a small travel router so phones can reach the laptop. If the QR code shows the wrong address, set `NEXT_PUBLIC_PUBLIC_URL=http://<laptop-ip>:3000` in `.env.local`.
 
+### Phone can't connect? Checklist
+
+1. Check the address under the QR code (for example `192.168.1.23:3000/play/ABCDE`). Type `http://` plus that address into the phone's browser.
+   - **Page doesn't load at all:** the phone can't reach the laptop. The Wi-Fi probably isolates devices (common on office and guest networks). Use the laptop's hotspot or a travel router.
+   - **The address looks wrong** (not your Wi-Fi address): set `NEXT_PUBLIC_PUBLIC_URL=http://<laptop-ip>:3000` in `.env.local` and restart. On a Mac, find the address under System Settings → Wi-Fi → Details, or run `ipconfig getifaddr en0`.
+2. **Page loads but says "Linking to the big screen…":** the phone can't reach the relay on port 3001. Make sure the terminal shows the `relay` line, and that the macOS firewall allows incoming connections for `node`.
+3. **For the booth, prefer `npm run kiosk`.** It runs a production build, which is faster on phones and doesn't have the dev server's origin checks.
+
 ### Test without a phone
 
 Open `http://localhost:3000/?transport=broadcast`, then open the URL under the QR code in a second window of the same browser (it ends in `?transport=broadcast`). The two windows talk directly, so no relay is needed.

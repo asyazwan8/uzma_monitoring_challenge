@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { HEARTBEAT_MS, type PhoneToDisplay, type PhoneView } from "@/game/protocol";
 import { randomId } from "@/lib/id";
-import { createTransport, type Transport } from "@/realtime";
+import { createTransport, relayUrl, transportKind, type Transport } from "@/realtime";
 import { AnswerPad } from "./AnswerPad";
 import { NicknameForm } from "./NicknameForm";
 import { ResultsView, RevealView, StartView, WatchView } from "./Views";
@@ -30,6 +30,7 @@ export function PhoneApp({ room }: { room: string }) {
   const [clientId] = useState(() => clientIdFor(room));
   const [status, setStatus] = useState<Status>("connecting");
   const [view, setView] = useState<PhoneView | null>(null);
+  const [slow, setSlow] = useState(false);
   const transportRef = useRef<Transport | null>(null);
 
   useEffect(() => {
@@ -53,11 +54,13 @@ export function PhoneApp({ room }: { room: string }) {
         setView((prev) => (prev && JSON.stringify(prev) === JSON.stringify(msg.view) ? prev : msg.view));
       }
     });
+    const slowTimer = setTimeout(() => setSlow(true), 5000);
     const heartbeat = setInterval(() => transport.send({ type: "ping", clientId }), HEARTBEAT_MS);
     const onLeave = () => transport.send({ type: "leave", clientId });
     window.addEventListener("pagehide", onLeave);
     return () => {
       clearTimeout(expiry);
+      clearTimeout(slowTimer);
       clearInterval(heartbeat);
       window.removeEventListener("pagehide", onLeave);
       offStatus();
@@ -96,6 +99,12 @@ export function PhoneApp({ room }: { room: string }) {
     body = (
       <Notice kicker="Connecting" title="Linking to the big screen…">
         Make sure your phone is on the same Wi-Fi as the challenge screen.
+        {slow && transportKind() === "ws" && (
+          <span className="mt-4 block text-[13px] text-white/50" data-testid="relay-hint">
+            Still waiting for the relay at {relayUrl()}. Check that <b>npm run dev:lan</b> (or <b>npm run kiosk</b>) is running on the laptop and
+            that its firewall allows incoming connections for node.
+          </span>
+        )}
       </Notice>
     );
   } else {
