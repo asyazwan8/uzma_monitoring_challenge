@@ -10,7 +10,7 @@ import {
   type GameAction,
   type GameState,
 } from "@/game/engine";
-import { ROUND_MS, TARGET_KINDS } from "@/game/levels";
+import { LIVES, ROUND_MS, TARGET_KINDS } from "@/game/levels";
 
 const PHONE = "phone-1";
 
@@ -69,8 +69,9 @@ describe("engine", () => {
     expect(after).toBe(s);
   });
 
-  it("advances on an exact answer and ends on a miss", () => {
+  it("advances on an exact answer; a miss costs a life and play moves on", () => {
     let s = toLive(started());
+    expect(s.lives).toBe(LIVES);
     expect(phoneViewFor(s)).toEqual({
       screen: "answer",
       level: 1,
@@ -82,23 +83,60 @@ describe("engine", () => {
     s = answer(s, s.round!.count);
     expect(s.phase).toBe("reveal");
     expect(s.history[0].correct).toBe(true);
+    expect(s.lives).toBe(3);
     expect(s.score).toBeGreaterThan(0);
     s = finishPhase(s);
     expect(s.phase).toBe("intro");
     expect(s.round!.level).toBe(2);
 
-    s = toLive(s);
-    s = answer(s, s.round!.count + 1);
-    expect(s.history[1].correct).toBe(false);
-    expect(phoneViewFor(s)).toMatchObject({ screen: "reveal", gameOver: true });
-    s = finishPhase(s);
+    // Three misses in a row: lives 2, 1, then 0 and the run ends.
+    for (const [level, livesLeft] of [
+      [2, 2],
+      [3, 1],
+      [4, 0],
+    ]) {
+      s = toLive(s);
+      expect(s.round!.level).toBe(level);
+      s = answer(s, s.round!.count + 1);
+      expect(s.history[s.history.length - 1].correct).toBe(false);
+      expect(s.lives).toBe(livesLeft);
+      expect(phoneViewFor(s)).toMatchObject({ screen: "reveal", gameOver: livesLeft === 0, livesLeft });
+      s = finishPhase(s);
+    }
     expect(s.phase).toBe("results");
+    expect(s.history).toHaveLength(4);
     s = finishPhase(s);
     expect(s.phase).toBe("leaderboard");
     s = finishPhase(s);
     expect(s.phase).toBe("idle");
     expect(s.player).toBeNull();
     expect(s.session).toBe(1);
+  });
+
+  it("a timeout also costs a life", () => {
+    let s = toLive(started());
+    s = finishPhase(s);
+    expect(s.phase).toBe("reveal");
+    expect(s.lives).toBe(LIVES - 1);
+    s = finishPhase(s);
+    expect(s.round!.level).toBe(2);
+  });
+
+  it("ends after level 20 even with lives left, and resets lives for the next run", () => {
+    let s = started();
+    for (let level = 1; level <= 20; level++) {
+      s = toLive(s);
+      // Miss level 7 and 13, clear the rest.
+      s = answer(s, level === 7 || level === 13 ? s.round!.count + 1 : s.round!.count);
+      s = finishPhase(s);
+    }
+    expect(s.phase).toBe("results");
+    expect(s.lives).toBe(1);
+    expect(s.history.filter((r) => r.correct)).toHaveLength(18);
+    // Back to idle and a new run starts with full lives.
+    s = finishPhase(finishPhase(s));
+    expect(s.phase).toBe("idle");
+    expect(s.lives).toBe(LIVES);
   });
 
   it("goes straight from the intro countdown to the live round", () => {
@@ -145,7 +183,7 @@ describe("engine", () => {
     expect(boundedReactionMs(s, 2000, s.phaseStartedAt + 3000)).toBe(2000);
     // A phone cannot report more time than has passed, or more than the window.
     expect(boundedReactionMs(s, 5000, s.phaseStartedAt + 3000)).toBe(3000);
-    expect(boundedReactionMs(s, 20000, s.phaseStartedAt + 11000)).toBe(ROUND_MS);
+    expect(boundedReactionMs(s, ROUND_MS * 2, s.phaseStartedAt + ROUND_MS + 1000)).toBe(ROUND_MS);
     expect(boundedReactionMs(s, Number.NaN, s.phaseStartedAt + 4000)).toBe(4000);
   });
 

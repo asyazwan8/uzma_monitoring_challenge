@@ -30,6 +30,7 @@ export type PhoneView =
       points: number;
       score: number;
       gameOver: boolean;
+      livesLeft: number;
     }
   | {
       screen: "results";

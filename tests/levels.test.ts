@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   LEVELS,
+  LIVES,
   ROUND_MS,
   TIERS,
   TOTAL_LEVELS,
@@ -35,8 +36,9 @@ describe("levels", () => {
     }
   });
 
-  it("gives every level the same 10 second view-and-answer window", () => {
-    expect(ROUND_MS).toBe(10_000);
+  it("gives every level the same 15 second view-and-answer window and 3 lives per run", () => {
+    expect(ROUND_MS).toBe(15_000);
+    expect(LIVES).toBe(3);
     for (const l of LEVELS) {
       expect(l.answerWindowMs).toBe(ROUND_MS);
       expect(l).not.toHaveProperty("exposureMs");

@@ -2,7 +2,7 @@
 
 import { Wordmark } from "@/components/brand/Wordmark";
 import { TargetIcon } from "@/components/brand/TargetIcon";
-import { TARGET_KINDS, TARGET_LABELS, TIERS, gridLabel } from "@/game/levels";
+import { LIVES, ROUND_MS, TARGET_KINDS, TARGET_LABELS, TIERS, gridLabel } from "@/game/levels";
 import { formatScore, pad2 } from "@/lib/format";
 import type { LeaderboardEntry } from "@/leaderboard";
 import { CityBackdrop } from "./CityBackdrop";
@@ -43,7 +43,8 @@ export function IdleScreen({
           <span className="text-geo-orange">Challenge</span>
         </h1>
         <p className="mt-8 max-w-[800px] text-[27px] leading-[1.5] text-white/80">
-          Count what matters from orbit. Ten seconds a level, four tiers, one question: can you see what our AI sees?
+          Count what matters from orbit. {ROUND_MS / 1000} seconds a level, {LIVES} lives, one question: can you see what our AI
+          sees?
         </p>
         <div className="mt-10 flex gap-8">
           {TARGET_KINDS.map((k) => (

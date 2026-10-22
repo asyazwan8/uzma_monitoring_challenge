@@ -1,6 +1,6 @@
 import { Wordmark } from "@/components/brand/Wordmark";
 import { TargetIcon } from "@/components/brand/TargetIcon";
-import { LEVELS, ROUND_MS, TARGET_KINDS, TARGET_LABELS, TIERS, gridLabel } from "@/game/levels";
+import { LEVELS, LIVES, ROUND_MS, TARGET_KINDS, TARGET_LABELS, TIERS, gridLabel } from "@/game/levels";
 import { pad2 } from "@/lib/format";
 import { CityBackdrop } from "./CityBackdrop";
 
@@ -71,7 +71,8 @@ export function InstructionsScreen({ nickname, backdropSeed }: { nickname: strin
 
       <footer className="absolute bottom-[64px] left-[96px] right-[96px] flex items-center justify-between">
         <p className="text-[22px] text-white/70">
-          <span className="font-extrabold text-white">One miss ends the run.</span> Clear all 20 levels to match our AI.
+          <span className="font-extrabold text-white">You have {LIVES} lives.</span> A miss costs one and you move on. Clear all 20 to
+          match our AI.
         </p>
         <p className="pulse-soft flex items-center gap-4 rounded-[4px] border-2 border-geo-orange px-8 py-4 text-[26px] font-extrabold uppercase tracking-[0.1em]">
           <svg width="22" height="34" viewBox="0 0 22 34" aria-hidden>

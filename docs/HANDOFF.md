@@ -102,7 +102,7 @@ Register it in [`src/realtime/index.ts`](../src/realtime/index.ts), for example 
 
 ## Useful seams
 
-- **Tuning:** [`src/game/levels.ts`](../src/game/levels.ts) holds the 10 s round (`ROUND_MS`), counts, points, and each tier's city grid and zoom. The tests in `tests/levels.test.ts` enforce "more objects every level; bigger grid, smaller objects and more points every five levels".
+- **Tuning:** [`src/game/levels.ts`](../src/game/levels.ts) holds the 15 s round (`ROUND_MS`), lives per run (`LIVES`), counts, points, and each tier's city grid and zoom. The tests in `tests/levels.test.ts` enforce "more objects every level; bigger grid, smaller objects and more points every five levels".
 - **Sound:** [`src/audio/`](../src/audio) holds the cues. `cues.ts` is a pure mapping from game transitions to timed cues and is unit-tested. `sfx.ts` and `music.ts` hold the synth voices and the generative score, and `/dev/audio` auditions them. It plays on the display only. To use recorded files instead, keep `cues.ts` and swap the voice functions for buffer playback.
 - **New targets:** add a kind to `TargetKind`, a carrier land use and fill rule in `src/city/generate.ts`, a sprite, and labels. The generator test automatically covers every target × level.
 - **Game flow and timings:** [`src/game/engine.ts`](../src/game/engine.ts) is a pure reducer (`TIMINGS` at the top), fully unit-tested in `tests/engine.test.ts`.

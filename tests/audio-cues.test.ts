@@ -188,7 +188,8 @@ describe("cuesFor: phase transitions", () => {
 
   it("results: a resolving chord; leaderboard and idle are silent", () => {
     const live = until(tier(), "live");
-    const reveal = answer(live, live.round!.count + 2);
+    // Last life: this miss ends the run.
+    const reveal = answer({ ...live, lives: 1 }, live.round!.count + 2);
     const results = finishPhase(reveal);
     expect(results.phase).toBe("results");
     expect(step(reveal, results)).toEqual([{ cue: "results", atWallMs: results.phaseStartedAt }]);
@@ -233,7 +234,7 @@ describe("cuesFor: no cues without a new phase", () => {
 
   it("rankResolved in results", () => {
     const live = until(tier(), "live");
-    const results = finishPhase(answer(live, live.round!.count + 1));
+    const results = finishPhase(answer({ ...live, lives: 1 }, live.round!.count + 1));
     expect(results.phase).toBe("results");
     const ranked = reducer(results, { type: "rankResolved", rank: 3 });
     expect(ranked.rank).toBe(3);

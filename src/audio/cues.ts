@@ -128,7 +128,7 @@ export function cuesFor(prev: GameState | null, next: GameState): ScheduledCue[]
 
 /**
  * Where the music's bar grid should put a bar line, on the wall clock: on entering
- * the countdown, the moment the live window will open. The 10 s window is then
+ * the countdown, the moment the live window will open. The 15 s window is then
  * exactly five bars, and the urgent ticks and time-up land on beats. Null when
  * the phase asks for no alignment.
  */

@@ -62,8 +62,8 @@ await display.waitForTimeout(800);
 await shot(display, "02-instructions");
 await phone.getByTestId("start-button").click();
 
-// Level 1 answered correctly after ~2.5 s, level 2 missed on purpose.
-for (let i = 0; i < 2; i++) {
+// Level 1 answered correctly after ~2.5 s, then three misses use up the lives.
+for (let i = 0; i < 4; i++) {
   await waitPhase("live");
   await phone.getByTestId("answer-pad").waitFor();
   await display.waitForTimeout(2500);

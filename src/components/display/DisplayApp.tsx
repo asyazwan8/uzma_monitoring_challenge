@@ -74,7 +74,7 @@ export function DisplayApp({ debug, timeScale, sound }: DisplayAppProps) {
       screen = <InstructionsScreen nickname={nickname} backdropSeed={state.session} />;
       break;
     case "results":
-      screen = <ResultsScreen nickname={nickname} summary={summary} rank={state.rank} backdropSeed={state.session} />;
+      screen = <ResultsScreen nickname={nickname} summary={summary} rank={state.rank} livesLeft={state.lives} backdropSeed={state.session} />;
       break;
     case "leaderboard": {
       const left = Math.max(0, Math.ceil(((phaseDurationMs(state) ?? 0) - (now - state.phaseStartedAt)) / 1000));

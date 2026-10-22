@@ -6,9 +6,10 @@ import { generateCity } from "@/city/generate";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { TargetIcon } from "@/components/brand/TargetIcon";
 import { TierBadge } from "@/components/brand/TierBadge";
-import { TIMINGS, lastResult, liveWindowMs, type GameState } from "@/game/engine";
+import { TIMINGS, isRunOver, lastResult, liveWindowMs, type GameState } from "@/game/engine";
 import {
   LEVELS,
+  LIVES,
   ROUND_MS,
   TARGET_HINTS,
   TARGET_LABELS,
@@ -101,7 +102,7 @@ export function GameScreen({ state, debug }: { state: GameState; debug: boolean 
   const tierLast = LEVELS[info.levels[1] - 1];
   const phoneOnline = !!state.player?.connected && now - state.player.lastSeen < PHONE_STALE_MS;
 
-  // The live round: all timer visuals follow the 10 s window, not the phase
+  // The live round: all timer visuals follow the 15 s window, not the phase
   // length, which adds a short grace period for answers still in flight.
   const live = state.phase === "live";
   const windowMs = liveWindowMs(state);
@@ -115,6 +116,9 @@ export function GameScreen({ state, debug }: { state: GameState; debug: boolean 
   const introLeft = TIMINGS.introMs * ts - elapsed;
   const introCount = Math.max(1, Math.ceil(introLeft / (1000 * ts)));
   const verdictShown = state.phase === "reveal" && elapsed >= revealVerdictDelayMs(round.count);
+  // Keep the lost life on screen until the verdict lands.
+  const livesShown = state.lives + (state.phase === "reveal" && !verdictShown && result && !result.correct ? 1 : 0);
+  const runOver = state.phase === "reveal" && isRunOver(state);
 
   return (
     <div className="absolute inset-0 bg-geo-space" data-testid="screen-game" data-phase={state.phase} data-level={round.level}>
@@ -196,7 +200,7 @@ export function GameScreen({ state, debug }: { state: GameState; debug: boolean 
       </div>
       <Brackets urgent={urgent} />
 
-      {/* 10 s drain bar just under the tile, visible in peripheral vision. */}
+      {/* 15 s drain bar just under the tile, visible in peripheral vision. */}
       <div className="absolute h-[10px] overflow-hidden rounded-full bg-white/12" style={{ left: MAP.x, top: MAP.y + MAP.h + 16, width: MAP.w }}>
         {live && (
           <div
@@ -254,6 +258,15 @@ export function GameScreen({ state, debug }: { state: GameState; debug: boolean 
           <div className="mt-3 flex items-center gap-3">
             <TierBadge tier={config.tier} />
             <span className="geo-caption text-[13px] text-white/60">{grid} blocks</span>
+          </div>
+          <div className="mt-4 flex items-center gap-3" data-testid="hud-lives" data-lives={livesShown}>
+            <span className="geo-caption text-[12px] text-white/60">Lives</span>
+            {Array.from({ length: LIVES }, (_, i) => (
+              <span
+                key={i}
+                className={`h-[16px] w-[16px] rounded-full ${i < livesShown ? "bg-white" : "border-2 border-white/30"}`}
+              />
+            ))}
           </div>
         </div>
 
@@ -316,11 +329,13 @@ export function GameScreen({ state, debug }: { state: GameState; debug: boolean 
                   <p className="tabular mt-2 text-[16px] text-white/60">
                     {result.correct
                       ? `${Math.round(config.basePoints / 2)} exact + ${result.points - Math.round(config.basePoints / 2)} speed bonus · ${((result.reactionMs ?? 0) / 1000).toFixed(2)} s`
-                      : result.answer === null
-                        ? "No answer in time. Run complete."
-                        : `Accuracy ${(result.accuracy * 100).toFixed(0)}% this round. Run complete.`}
+                      : `${result.answer === null ? "No answer in time" : `Accuracy ${(result.accuracy * 100).toFixed(0)}% this round`} · ${
+                          state.lives === 0 ? "no lives left" : `${state.lives} ${state.lives === 1 ? "life" : "lives"} left`
+                        }`}
                   </p>
-                  {result.correct && <p className="mt-1 text-[16px] text-white/60">{round.level < TOTAL_LEVELS ? "Next level loading." : "All 20 levels cleared."}</p>}
+                  <p className="mt-1 text-[16px] text-white/60">
+                    {runOver ? (state.lives === 0 ? "Run complete." : "All 20 levels played.") : "Next level loading."}
+                  </p>
                 </div>
               ) : (
                 <p className="geo-caption pulse-soft mt-5 text-[15px] text-white/70">AI scanning the tile…</p>

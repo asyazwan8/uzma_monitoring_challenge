@@ -1,5 +1,5 @@
 import { Wordmark } from "@/components/brand/Wordmark";
-import { TOTAL_LEVELS, tierInfo, tierForLevel } from "@/game/levels";
+import { LIVES, TOTAL_LEVELS, tierInfo, tierForLevel } from "@/game/levels";
 import { AI_BENCHMARK, formatSeconds, type RunSummary } from "@/game/scoring";
 import { formatPct, formatScore, pad2 } from "@/lib/format";
 import { CityBackdrop } from "./CityBackdrop";
@@ -9,11 +9,13 @@ export function ResultsScreen({
   nickname,
   summary,
   rank,
+  livesLeft,
   backdropSeed,
 }: {
   nickname: string;
   summary: RunSummary;
   rank: number | null;
+  livesLeft: number;
   backdropSeed: number;
 }) {
   const reached = tierInfo(tierForLevel(Math.max(1, summary.roundsPlayed)));
@@ -28,7 +30,7 @@ export function ResultsScreen({
 
       <section className="rise-in absolute left-[96px] top-[160px] w-[980px]">
         <p className="geo-kicker text-[22px]">
-          {summary.completed ? "All levels cleared" : "Run complete"} · {nickname}
+          {summary.completed ? "All levels cleared" : livesLeft > 0 ? "All 20 levels played" : "Out of lives"} · {nickname}
         </p>
         <h1 className="geo-hero mt-3 text-[84px]">
           Your <span className="text-geo-orange">results</span>
@@ -48,6 +50,13 @@ export function ResultsScreen({
               <span className="text-[30px] text-white/45"> / {TOTAL_LEVELS}</span>
             </p>
             <p className="mt-2 text-[18px] text-white/60">Reached {reached.label}</p>
+          </div>
+          <div className="pb-4">
+            <p className="geo-caption text-[15px] text-white/60">Lives left</p>
+            <p className="tabular text-[64px] font-extrabold leading-none" data-testid="final-lives">
+              {livesLeft}
+              <span className="text-[30px] text-white/45"> / {LIVES}</span>
+            </p>
           </div>
           <div className="pb-4">
             <p className="geo-caption text-[15px] text-white/60">Leaderboard</p>

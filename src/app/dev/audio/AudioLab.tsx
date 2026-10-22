@@ -74,7 +74,7 @@ export function AudioLab() {
     audio()?.setMusic(mode);
   };
 
-  /** The live window: go, riser and ticks in the last 3 s, time up at 10 s. */
+  /** The live window: go, riser and ticks in the last 3 s, time up at 15 s. */
   const liveWindow = () => {
     const a = audio();
     if (!a) return;
@@ -162,7 +162,7 @@ export function AudioLab() {
         <h2 className="geo-h mb-3 text-[15px]">Sequences</h2>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={btn} onClick={liveWindow}>
-            Live window (10 s)
+            Live window (15 s)
           </button>
           <button
             type="button"

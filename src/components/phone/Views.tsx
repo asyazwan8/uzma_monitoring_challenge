@@ -2,7 +2,7 @@
 
 import { TargetIcon } from "@/components/brand/TargetIcon";
 import { TierBadge } from "@/components/brand/TierBadge";
-import { ROUND_MS, TARGET_HINTS, TARGET_LABELS, TOTAL_LEVELS, gridLabel, tierInfo } from "@/game/levels";
+import { LIVES, ROUND_MS, TARGET_HINTS, TARGET_LABELS, TOTAL_LEVELS, gridLabel, tierInfo } from "@/game/levels";
 import type { PhoneView } from "@/game/protocol";
 import { AI_BENCHMARK, formatSeconds } from "@/game/scoring";
 import { formatPct, formatScore, pad2 } from "@/lib/format";
@@ -34,7 +34,7 @@ export function StartView({ nickname, onStart }: { nickname: string; onStart: ()
         ))}
       </ol>
       <p className="mt-6 rounded-[4px] border border-white/15 px-4 py-3 text-[14px] text-white/70">
-        20 levels: the city grows from 2×2 to 3×4 blocks. <b className="text-white">One miss ends the run.</b>
+        20 levels: the city grows from 2×2 to 3×4 blocks. <b className="text-white">You have {LIVES} lives: a miss costs one.</b>
       </p>
       <button
         onClick={onStart}
@@ -99,7 +99,11 @@ export function RevealView({ view }: { view: ViewOf<"reveal"> }) {
       </p>
       <p className="tabular mt-8 text-[44px] font-extrabold leading-none">+{view.points}</p>
       <p className="geo-caption mt-2 text-[12px] text-white/60">Score {formatScore(view.score)}</p>
-      <p className="mt-10 text-[15px] text-white/60">{view.gameOver ? "Run complete. Your results are on the big screen." : "Next level coming up…"}</p>
+      <p className="mt-10 text-[15px] text-white/60">{view.gameOver
+          ? "Run complete. Your results are on the big screen."
+          : view.correct
+            ? "Next level coming up…"
+            : `${view.livesLeft} ${view.livesLeft === 1 ? "life" : "lives"} left · next level coming up…`}</p>
     </div>
   );
 }

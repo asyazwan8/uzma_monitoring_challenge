@@ -1,5 +1,6 @@
 import { createRng, hashSeed } from "@/lib/rng";
 import {
+  LIVES,
   ROUND_MS,
   TARGET_KINDS,
   TOTAL_LEVELS,
@@ -18,8 +19,10 @@ import { roundAccuracy, roundPoints, speedFactor, summarise, type RoundResult } 
  * idle -> lobby -> instructions -> [tier] -> intro -> live -> reveal
  *      -> ([tier] -> intro ...) | results -> leaderboard -> idle
  *
- * `live` is the 10-second round: the tile is on screen and the phone keypad is
+ * `live` is the 15-second round: the tile is on screen and the phone keypad is
  * open at the same time. An answer ends it early; running out of time is a miss.
+ * A miss costs one of three lives but play moves on to the next level; the run
+ * ends when the lives run out or after level 20.
  */
 
 export type PhaseName =
@@ -39,7 +42,7 @@ export const TIMINGS = {
   revealCorrectMs: 4500,
   revealMissMs: 6500,
   /**
-   * Real time an answer may still arrive after the 10 s window closes, covering
+   * Real time an answer may still arrive after the 15 s window closes, covering
    * network delay between phone and display. Not scaled by timeScale.
    */
   answerGraceMs: 1500,
@@ -79,6 +82,8 @@ export interface GameState {
   round: Round | null;
   history: RoundResult[];
   score: number;
+  /** Lives left in the current run. */
+  lives: number;
   rank: number | null;
   /** Multiplier on every timer; < 1 speeds the game up for automated tests. */
   timeScale: number;
@@ -117,6 +122,7 @@ export function createInitialState(now: number, timeScale = 1): GameState {
     round: null,
     history: [],
     score: 0,
+    lives: LIVES,
     rank: null,
     timeScale,
   };
@@ -169,9 +175,15 @@ export function phaseDurationMs(state: GameState): number | null {
   }
 }
 
-/** The visible 10 s window of the live phase, in real (scaled) milliseconds. */
+/** The visible 15 s window of the live phase, in real (scaled) milliseconds. */
 export function liveWindowMs(state: Pick<GameState, "timeScale">): number {
   return ROUND_MS * state.timeScale;
+}
+
+/** After a reveal: out of lives, or the last level has been played. */
+export function isRunOver(state: GameState): boolean {
+  const result = lastResult(state);
+  return state.lives <= 0 || (result !== null && result.level >= TOTAL_LEVELS);
 }
 
 export function lastResult(state: GameState): RoundResult | null {
@@ -227,7 +239,11 @@ function resolveAnswer(state: GameState, value: number | null, reactionMs: numbe
     points,
     correct: value === round.count,
   };
-  return enter(state, "reveal", now, { history: [...state.history, result], score: state.score + points });
+  return enter(state, "reveal", now, {
+    history: [...state.history, result],
+    score: state.score + points,
+    lives: result.correct ? state.lives : Math.max(0, state.lives - 1),
+  });
 }
 
 function advance(state: GameState, now: number): GameState {
@@ -240,7 +256,7 @@ function advance(state: GameState, now: number): GameState {
       return resolveAnswer(state, null, null, now);
     case "reveal": {
       const result = lastResult(state)!;
-      if (!result.correct || result.level >= TOTAL_LEVELS) return enter(state, "results", now);
+      if (isRunOver(state)) return enter(state, "results", now);
       const level = result.level + 1;
       const round = makeRound(state.runSeed, level, state.targets);
       return enter(state, startsTier(level) ? "tier" : "intro", now, { round });
@@ -286,6 +302,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
         round: makeRound(action.runSeed, 1, targets),
         history: [],
         score: 0,
+        lives: LIVES,
         rank: null,
       });
     }
@@ -360,7 +377,8 @@ export function phoneViewFor(state: GameState): PhoneView {
         answer: result.answer,
         points: result.points,
         score: state.score,
-        gameOver: !result.correct || result.level >= TOTAL_LEVELS,
+        gameOver: isRunOver(state),
+        livesLeft: state.lives,
       };
     }
     case "results":

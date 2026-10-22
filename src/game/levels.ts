@@ -1,5 +1,5 @@
 /**
- * The single tuning table for the challenge. Every level is one 10-second window
+ * The single tuning table for the challenge. Every level is one 15-second window
  * in which the player views the tile and answers. Difficulty grows with the city:
  * each tier of five levels shows a bigger grid of blocks (2x2, 2x3, 3x3, 3x4),
  * zoomed out so objects get smaller, and from Hard onwards adds look-alike
@@ -12,7 +12,9 @@ export type TargetKind = "blueHouse" | "circleLake" | "tree" | "car";
 export const TARGET_KINDS: readonly TargetKind[] = ["blueHouse", "circleLake", "tree", "car"];
 export const TOTAL_LEVELS = 20;
 /** One window per level to view the tile and answer on the phone. */
-export const ROUND_MS = 10_000;
+export const ROUND_MS = 15_000;
+/** Each wrong answer or timeout costs a life; the run ends at zero. */
+export const LIVES = 3;
 
 export interface TierInfo {
   id: Tier;

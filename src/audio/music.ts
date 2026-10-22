@@ -2,8 +2,8 @@ import type { MusicMode } from "./cues";
 import { FLOOR, Voice, fxFor, hash01, midiHz, pluck, rampTo, swell } from "./dsp";
 
 /**
- * Generative background music in D minor at a fixed 120 bpm, so the 10 s round
- * is exactly five bars. scheduleRange is pure scheduling: given a time span it
+ * Generative background music in D minor at a fixed 120 bpm, so the 15 s round
+ * is seven and a half bars. scheduleRange is pure scheduling: given a time span it
  * places every note that starts inside it, which lets an OfflineAudioContext
  * render the same music the realtime Sequencer plays.
  *
@@ -16,8 +16,8 @@ import { FLOOR, Voice, fxFor, hash01, midiHz, pluck, rampTo, swell } from "./dsp
  * applies on the next step (the arp must be gone when counting starts), and the
  * Sequencer restarts on 'results' so the bed lands with the D major sting
  * instead of a game chord ringing under it. The engine can also realign the bar
- * grid so a bar line falls on the start of the live window: the 10 s round is
- * then exactly five bars and the urgent ticks fall on beats, between the hats.
+ * grid so a bar line falls on the start of the live window: the 15 s round
+ * then spans seven and a half bars and the urgent ticks fall on beats, between the hats.
  */
 
 export const BPM = 120;

@@ -1,12 +1,12 @@
 # The Monitoring Challenge
 
-A booth game for **Geospatial AI** (An Uzma Company). A big screen shows a top-down satellite-style city. Players have **10 seconds** to count one kind of object (blue houses, circular lakes, trees or cars) and type the count on their phone while they look. The city grows over 20 levels in four tiers, from **2×2 to 3×4 city blocks**. An exact answer advances, and the first miss or timeout ends the run. Points reward accuracy and speed. The display plays synthesised music and sound effects. The end screen compares the player with our AI: **0.00001 s, 100% accuracy**.
+A booth game for **Geospatial AI** (An Uzma Company). A big screen shows a top-down satellite-style city. Players have **15 seconds** to count one kind of object (blue houses, circular lakes, trees or cars) and type the count on their phone while they look. The city grows over 20 levels in four tiers, from **2×2 to 3×4 city blocks**. Each player has **3 lives**: a wrong answer or timeout costs one, and play moves on to the next level. The run ends when the lives run out or after level 20. Points reward accuracy and speed. The display plays synthesised music and sound effects. The end screen compares the player with our AI: **0.00001 s, 100% accuracy**.
 
 This is a **local proof of concept**. It runs on one laptop plus phones on the same Wi-Fi, with no accounts or cloud services. Realtime messaging and the leaderboard sit behind small interfaces, so the next developer can plug in a hosted service and a database and deploy to Vercel. See [docs/HANDOFF.md](docs/HANDOFF.md).
 
 ![Idle screen](docs/screenshots/01-idle.jpg)
 
-| Live round (10 s) | AI reveal | Results |
+| Live round (15 s) | AI reveal | Results |
 |---|---|---|
 | ![](docs/screenshots/03-live.jpg) | ![](docs/screenshots/04-reveal.jpg) | ![](docs/screenshots/05-results.jpg) |
 
@@ -70,7 +70,9 @@ Tune or audition every cue and music mode at `/dev/audio`.
 
 ## How the game works
 
-Every level is one **10-second live round**. The tile appears on the big screen while the phone keypad is open. Answering ends the round straight away, so a faster exact answer scores more. If the 10 seconds run out, it counts as a miss.
+Every level is one **15-second live round**. The tile appears on the big screen while the phone keypad is open. Answering ends the round straight away, so a faster exact answer scores more. If the 15 seconds run out, it counts as a miss.
+
+Players start with **3 lives** (shown in the HUD). A wrong answer or timeout costs a life, and play still moves on to the next level. The run ends at 0 lives or after level 20, whichever comes first. The results screen shows the levels cleared and the lives left.
 
 | Tier | Levels | City | Zoom (house / car on screen) | Objects | Points per level |
 |---|---|---|---|---|---|
@@ -80,7 +82,7 @@ Every level is one **10-second live round**. The tile appears on the big screen 
 | Extreme | 16–20 | 3×4 blocks | ~34 / 20 px | 17 → 24 | 500 |
 
 - Difficulty comes from the city: each tier shows more blocks, zoomed out so everything is smaller. From Hard onwards, **look-alikes** appear: slate and teal roofs, oval lakes, round plazas and shrubs.
-- **Points per level** = base × accuracy × (50% + 50% × speed). Accuracy is `1 − |answer − truth| / truth`. Speed runs from 1 for an instant answer to 0 at 10 s. An exact answer therefore earns between half and all of the base. The display shows the "points if exact" draining live.
+- **Points per level** = base × accuracy × (50% + 50% × speed). Accuracy is `1 − |answer − truth| / truth`. Speed runs from 1 for an instant answer to 0 at 15 s. An exact answer therefore earns between half and all of the base. The display shows the "points if exact" draining live.
 - **Answer time** is measured on the phone, from the keypad opening (when the tile appears) to SUBMIT, so network lag never counts. The display bounds it by its own clock, so a reloaded phone or a forged message can't claim an instant answer.
 - **Final accuracy** is the mean accuracy over all rounds played. The average answer time excludes timeouts.
 - The leaderboard ranks by score, then faster average time. Scores are kept per display browser, under a `v2` storage key, so scores from the earlier timing don't mix in.
