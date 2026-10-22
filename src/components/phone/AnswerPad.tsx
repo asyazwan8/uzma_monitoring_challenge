@@ -65,7 +65,7 @@ export function AnswerPad({
       <div className="flex items-center gap-3">
         <TargetIcon kind={view.target} size={40} className="rounded-[4px]" />
         <div className="min-w-0 flex-1">
-          <p className="geo-caption text-[11px] text-white/60">Level {pad2(view.level)} · On the big screen, count the</p>
+          <p className="geo-caption text-[11px] text-white/60">Level {pad2(view.level)} · Count the</p>
           <p className="geo-h truncate text-[20px] leading-tight">{TARGET_LABELS[view.target].plural}</p>
         </div>
         <p className={`tabular text-[28px] font-extrabold ${remaining < 3000 && !locked ? "text-geo-orange" : ""}`}>

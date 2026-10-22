@@ -210,7 +210,7 @@ export function GameScreen({ state, debug }: { state: GameState; debug: boolean 
 
       {/* Caption under the tile; on reveal the AI result takes its place. */}
       {state.phase === "reveal" ? (
-        <div className="rise-in absolute flex items-baseline gap-5" style={{ left: MAP.x, top: MAP.y + MAP.h + 40, width: MAP.w }} data-testid="ai-detected">
+        <div className="rise-in absolute flex items-baseline gap-5" style={{ left: MAP.x, top: MAP.y + MAP.h + 34, width: MAP.w }} data-testid="ai-detected">
           <span className="geo-kicker text-[16px]">Geospatial AI detected</span>
           <span className="geo-h text-[30px] leading-none">
             <span className="tabular">{round.count}</span> {label.plural}
@@ -223,7 +223,8 @@ export function GameScreen({ state, debug }: { state: GameState; debug: boolean 
             {live && (
               <>
                 <span className="pulse-soft inline-block h-[9px] w-[9px] rounded-full bg-geo-orange" />
-                <span className="text-white">Live</span> ·
+                <span className="text-white">Live</span>
+                <span>·</span>
               </>
             )}
             UZMASAT-1 · Optical · {scene.caption.gsdM.toFixed(2)} m GSD · {tileDate()} · Tile {scene.caption.tile}
@@ -236,7 +237,7 @@ export function GameScreen({ state, debug }: { state: GameState; debug: boolean 
       )}
 
       {/* Level timeline */}
-      <div className="absolute" style={{ left: MAP.x, top: 994, width: MAP.w }}>
+      <div className="absolute" style={{ left: MAP.x, top: 1004, width: MAP.w }}>
         <LevelTimeline level={round.level} history={state.history} />
       </div>
 

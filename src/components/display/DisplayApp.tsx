@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useGameAudio } from "@/audio/useGameAudio";
 import { phaseDurationMs } from "@/game/engine";
 import { TOTAL_LEVELS } from "@/game/levels";
 import { summarise } from "@/game/scoring";
@@ -30,6 +31,7 @@ export interface DisplayAppProps {
 
 export function DisplayApp({ debug, timeScale, sound }: DisplayAppProps) {
   const { state, board, lastEntry, reset, transportStatus } = useGameHost({ timeScale });
+  const audio = useGameAudio(state, { enabled: sound, debug });
   const [base, setBase] = useState<string | null>(null);
   const now = useNow(1000);
 
@@ -95,11 +97,37 @@ export function DisplayApp({ debug, timeScale, sound }: DisplayAppProps) {
   return (
     <Stage>
       {screen}
+      {sound && <SoundStatus status={audio.status} muted={audio.muted} hint={debug || state.phase === "idle" || state.phase === "lobby"} />}
       {transportStatus !== "open" && (
         <div className="absolute right-[24px] top-[16px] rounded bg-geo-orange px-3 py-1 text-[13px] font-bold uppercase tracking-[0.08em]">
           Relay offline: start it with npm run relay
         </div>
       )}
     </Stage>
+  );
+}
+
+/**
+ * Bottom-right corner of the stage, clear of the map and HUD. Browsers keep
+ * audio locked until someone clicks or presses a key on the display, so the
+ * hint shows on the attract screen until then (or use the kiosk autoplay flag).
+ */
+function SoundStatus({ status, muted, hint }: { status: string; muted: boolean; hint: boolean }) {
+  if (status === "running" && !muted) return null;
+  if (status === "locked" && !hint) return null;
+  return (
+    <div
+      className="geo-caption absolute bottom-[14px] right-[20px] flex items-center gap-2 rounded-[4px] bg-geo-panel/90 px-3 py-1.5 text-[12px] text-white/75"
+      data-testid="sound-status"
+      data-status={status}
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+        <path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor" />
+        {muted || status !== "running" ? (
+          <path d="M11 6l4 4M15 6l-4 4" stroke="#F26522" strokeWidth="1.6" strokeLinecap="round" />
+        ) : null}
+      </svg>
+      {muted ? "Sound off · M" : "Click or press any key to enable sound"}
+    </div>
   );
 }
