@@ -39,7 +39,7 @@ export interface MasterChain {
   nodes: AudioNode[];
 }
 
-const MUSIC_BUS = 0.3;
+const MUSIC_BUS = 0.42;
 const SFX_BUS = 0.6;
 const DEFAULT_VOLUME = 0.9;
 /** Duck levels by reason; the music sits at the minimum of the active ones. */
@@ -201,6 +201,8 @@ export class GameAudio {
   debug = false;
 
   private ctx: AudioContext | null = null;
+  private meter: AnalyserNode | null = null;
+  private meterBuf: Float32Array<ArrayBuffer> | null = null;
   private chain: MasterChain | null = null;
   private seq: Sequencer | null = null;
   private mode: MusicMode = { kind: "silent" };
@@ -238,6 +240,15 @@ export class GameAudio {
     return this.ctx?.currentTime ?? 0;
   }
 
+  /** RMS of the output right now (0 when silent, locked or muted). */
+  level(): number {
+    if (!this.meter || !this.meterBuf || this.ctx?.state !== "running") return 0;
+    this.meter.getFloatTimeDomainData(this.meterBuf);
+    let sum = 0;
+    for (const v of this.meterBuf) sum += v * v;
+    return Math.sqrt(sum / this.meterBuf.length);
+  }
+
   /** Primitive snapshot for useSyncExternalStore. */
   get snapshot(): string {
     return `${this.status}|${this._muted ? 1 : 0}|${this._volume}`;
@@ -257,6 +268,11 @@ export class GameAudio {
       this.ctx = ctx;
       this.chain = buildMasterChain(ctx, ctx.destination);
       this.chain.master.gain.value = this._muted ? 0 : this._volume;
+      // Output meter (a passive tap) so tests and staff can confirm sound is really playing.
+      this.meter = ctx.createAnalyser();
+      this.meter.fftSize = 2048;
+      this.meterBuf = new Float32Array(this.meter.fftSize);
+      this.chain.master.connect(this.meter);
       this.seq = new Sequencer(ctx, this.chain.music);
       this.seq.setMode(this.mode);
       this.beginPhase("boot");

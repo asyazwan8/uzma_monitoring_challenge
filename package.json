@@ -7,6 +7,7 @@
     "dev": "concurrently -k -n next,relay -c auto \"next dev\" \"npm:relay\"",
     "dev:lan": "concurrently -k -n next,relay -c auto \"next dev -H 0.0.0.0\" \"npm:relay\"",
     "kiosk": "next build && concurrently -k -n next,relay -c auto \"next start -H 0.0.0.0\" \"npm:relay\"",
+    "booth": "node scripts/booth.mjs",
     "relay": "tsx server/relay.ts",
     "build": "next build",
     "start": "next start",

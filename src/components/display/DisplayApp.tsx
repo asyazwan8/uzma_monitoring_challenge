@@ -97,7 +97,7 @@ export function DisplayApp({ debug, timeScale, sound }: DisplayAppProps) {
   return (
     <Stage>
       {screen}
-      {sound && <SoundStatus status={audio.status} muted={audio.muted} hint={debug || state.phase === "idle" || state.phase === "lobby"} />}
+      {sound && <SoundStatus status={audio.status} muted={audio.muted} prominent={state.phase === "idle" || state.phase === "lobby" || state.phase === "instructions"} />}
       {transportStatus !== "open" && (
         <div className="absolute right-[24px] top-[16px] rounded bg-geo-orange px-3 py-1 text-[13px] font-bold uppercase tracking-[0.08em]">
           Relay offline: start it with npm run relay
@@ -108,26 +108,42 @@ export function DisplayApp({ debug, timeScale, sound }: DisplayAppProps) {
 }
 
 /**
- * Bottom-right corner of the stage, clear of the map and HUD. Browsers keep
- * audio locked until someone clicks or presses a key on the display, so the
- * hint shows on the attract screen until then (or use the kiosk autoplay flag).
+ * Browsers keep audio locked until someone clicks or presses a key on this
+ * page; phone taps don't count. On the attract screen that is a big card a
+ * staff member can't miss; mid-game a smaller pill. `npm run booth` launches
+ * Chrome with autoplay allowed, so neither appears.
  */
-function SoundStatus({ status, muted, hint }: { status: string; muted: boolean; hint: boolean }) {
-  if (status === "running" && !muted) return null;
-  if (status === "locked" && !hint) return null;
+function SoundStatus({ status, muted, prominent }: { status: string; muted: boolean; prominent: boolean }) {
+  const speaker = (size: number) => (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor" />
+      <path d="M11 6l4 4M15 6l-4 4" stroke="#F26522" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+  if (status === "locked" && prominent) {
+    return (
+      <div
+        className="pulse-soft absolute bottom-[20px] right-[96px] flex items-center gap-4 rounded-[8px] bg-white px-6 py-3 text-geo-ink shadow-[0_8px_24px_rgba(9,25,38,0.3)]"
+        data-testid="sound-status"
+        data-status={status}
+      >
+        {speaker(34)}
+        <span>
+          <span className="block text-[20px] font-extrabold uppercase tracking-[0.06em]">Click anywhere to turn on sound</span>
+          <span className="block text-[14px] text-geo-graphite">Browsers keep sound off until the screen is clicked once.</span>
+        </span>
+      </div>
+    );
+  }
+  if (status !== "locked" && !muted) return null;
   return (
     <div
-      className="geo-caption absolute bottom-[14px] right-[20px] flex items-center gap-2 rounded-[4px] bg-geo-panel/90 px-3 py-1.5 text-[12px] text-white/75"
+      className="geo-caption absolute bottom-[14px] right-[20px] flex items-center gap-2 rounded-[4px] bg-geo-panel/90 px-3 py-1.5 text-[13px] text-white/85"
       data-testid="sound-status"
       data-status={status}
     >
-      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
-        <path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor" />
-        {muted || status !== "running" ? (
-          <path d="M11 6l4 4M15 6l-4 4" stroke="#F26522" strokeWidth="1.6" strokeLinecap="round" />
-        ) : null}
-      </svg>
-      {muted ? "Sound off · M" : "Click or press any key to enable sound"}
+      {speaker(14)}
+      {muted ? "Sound off · M" : "Sound off · click the screen"}
     </div>
   );
 }

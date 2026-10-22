@@ -115,3 +115,58 @@ test("default policy: audio is locked until the first click, then runs", async (
   await expect.poll(() => status(page)).toBe("running");
   await expect(page.getByTestId("audio-status")).toHaveText("running");
 });
+
+// The real thing, not an offline render: on the display with autoplay allowed,
+// the output meter must show sound on the attract screen and during a round.
+test("the display actually makes sound: attract music and the live round", async ({ baseURL }) => {
+  await withPolicy("no-user-gesture-required", baseURL, async (display) => {
+    type Meter = Window & { __mcAudio?: { status: string; level(): number } };
+    const peakLevel = async (ms: number) => {
+      let max = 0;
+      for (let t = 0; t < ms; t += 100) {
+        max = Math.max(max, await display.evaluate(() => (window as Meter).__mcAudio?.level() ?? 0));
+        await display.waitForTimeout(100);
+      }
+      return max;
+    };
+    await display.setViewportSize({ width: 1920, height: 1080 });
+    await display.goto("/?debug=1&transport=broadcast");
+    await expect.poll(() => display.evaluate(() => (window as Meter).__mcAudio?.status)).toBe("running");
+    // No "click to enable sound" card when audio already runs.
+    await expect(display.getByTestId("sound-status")).toHaveCount(0);
+    expect(await peakLevel(4000)).toBeGreaterThan(0.002);
+
+    const room = (await display.getByTestId("room-code").textContent())!.trim();
+    const phone = await display.context().newPage();
+    await phone.goto(`/play/${room}?transport=broadcast`);
+    await phone.getByTestId("nickname-input").fill("Sound Check");
+    await phone.getByTestId("nickname-submit").click();
+    await phone.getByTestId("start-button").click();
+    await expect(phone.getByTestId("answer-pad")).toBeVisible({ timeout: 30_000 });
+    expect(await peakLevel(3000)).toBeGreaterThan(0.004);
+  });
+});
+
+test("without autoplay the attract screen asks for a click, which turns sound on", async ({ baseURL }) => {
+  // Chrome's real default policy, as on a normally opened browser. Playwright's
+  // own queries count as user gestures, so the card is watched from inside the
+  // page and reported through the console instead.
+  await withPolicy("document-user-activation-required", baseURL, async (page) => {
+    const seen: string[] = [];
+    page.on("console", (msg) => msg.text().startsWith("sound-card:") && seen.push(msg.text()));
+    await page.addInitScript(() => {
+      let last = "";
+      const check = () => {
+        const el = document.querySelector('[data-testid="sound-status"]');
+        const now = el ? `sound-card:${el.textContent}` : "sound-card:none";
+        if (now !== last) console.log((last = now));
+      };
+      new MutationObserver(check).observe(document, { childList: true, subtree: true, characterData: true });
+    });
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto("/?transport=broadcast");
+    await expect.poll(() => seen.some((t) => t.includes("Click anywhere to turn on sound")), { timeout: 15_000 }).toBe(true);
+    await page.mouse.click(960, 540);
+    await expect.poll(() => seen[seen.length - 1], { timeout: 5_000 }).toBe("sound-card:none");
+  });
+});

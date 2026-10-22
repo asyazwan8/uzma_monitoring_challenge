@@ -26,7 +26,7 @@ npm run dev:lan        # Next.js on 0.0.0.0:3000 + realtime relay on :3001
 1. On the laptop that drives the TV, open **http://localhost:3000** and go full screen (F11). The display shows a QR code that points at the laptop's LAN address.
 2. Scan the QR code with a phone on the **same Wi-Fi**, enter a nickname and press START.
 
-For the booth itself, run `npm run kiosk`. It makes a production build, then starts the server and relay.
+For the booth itself, run **`npm run booth`**. It makes a production build, starts the server and relay, and opens Chrome full screen with sound allowed. (`npm run kiosk` does the same without opening Chrome.)
 
 **Venue Wi-Fi tip:** guest networks often block device-to-device traffic. Use the laptop's hotspot or a small travel router so phones can reach the laptop. If the QR code shows the wrong address, set `NEXT_PUBLIC_PUBLIC_URL=http://<laptop-ip>:3000` in `.env.local`.
 
@@ -57,14 +57,17 @@ On the display, press **Esc** to return to the attract screen and **M** to mute 
 
 Music and sound effects are synthesised live with the Web Audio API, so there are no audio files and they work offline. They play from the big screen only; phones stay silent apart from vibration.
 
-Browsers block audio until someone interacts with the page, so:
+Browsers keep sound **off** until someone clicks or presses a key **on the display's browser tab**. Taps on the phones don't count. So for the booth:
 
-- **Simplest:** at setup, click once anywhere on the display (or press any key). Sound then stays on for the day, unless the tab reloads. Until then, a small "enable sound" hint shows on the attract screen.
-- **Unattended kiosk:** launch Chrome with autoplay allowed, and sound starts by itself:
-  ```bash
-  google-chrome --kiosk --autoplay-policy=no-user-gesture-required --user-data-dir=$HOME/.mc-kiosk http://localhost:3000
-  ```
-  On a Mac the binary is `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`. The flag is ignored if Chrome is already running with the same profile, which is why the command uses a dedicated `--user-data-dir`.
+- **Recommended:** run **`npm run booth`** instead of `npm run kiosk`. It starts the game and opens Chrome full screen with sound allowed, so nobody has to click the TV. Quit Chrome with Cmd + Q (Alt + F4 on Windows); Ctrl + C in the terminal stops the game. Use `npm run booth -- --window` for a normal window.
+- **Otherwise:** after opening `http://localhost:3000`, click once anywhere on the TV screen. Until you do, a white **"Click anywhere to turn on sound"** card shows on the attract screen.
+
+**No sound? Checklist**
+
+1. Is the white "Click anywhere to turn on sound" card showing? Click the TV screen once, or start with `npm run booth`.
+2. Is the computer's volume up and the right output selected? On a Mac: System Settings → Sound → Output (pick the TV over HDMI if it's connected). Check that the Chrome tab isn't muted too (right-click the tab).
+3. Does "Sound off · M" show in the corner? Press **M** to unmute.
+4. Still nothing: open `http://localhost:3000/dev/audio`, click the page, and press any cue button to test the speakers.
 
 Tune or audition every cue and music mode at `/dev/audio`.
 

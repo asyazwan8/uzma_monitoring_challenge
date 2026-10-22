@@ -7,7 +7,7 @@ import { FLOOR, Voice, fxFor, hash01, midiHz, pluck, rampTo, swell } from "./dsp
  * places every note that starts inside it, which lets an OfflineAudioContext
  * render the same music the realtime Sequencer plays.
  *
- * attract  sparse pad and bells, 32 bars on then 16 bars of near-silence
+ * attract  sparse pad and bells, 40 bars on then 4 bars of near-silence
  * game     pad, bass and arp; hats from intensity 2, a soft kick at 3. While the
  *          round is live the arp drops out, because it fights mental counting.
  * results  the pad resolves to D major.
@@ -57,8 +57,8 @@ const ATTRACT_PROG = [DM9, BBMAJ7S11, FMAJ9, C69];
 const RESULTS_PROG = [DMAJ9, DMAJ9, BBMAJ9, A7SUS4];
 
 /** Attract cycle: this many bars playing, then the rest near-silent. */
-const ATTRACT_ON_BARS = 32;
-const ATTRACT_CYCLE_BARS = 48;
+const ATTRACT_ON_BARS = 40;
+const ATTRACT_CYCLE_BARS = 44;
 
 export interface StepState {
   /** Audio time of step 0. */
@@ -190,8 +190,8 @@ function playStep(ctx: BaseAudioContext, dest: AudioNode, mode: MusicMode, step:
       const chord = ATTRACT_PROG[Math.floor(cb / 2) % ATTRACT_PROG.length];
       if (cb < ATTRACT_ON_BARS) {
         if (s === 0 && cb % 2 === 0) {
-          pad(ctx, dest, chord.pad, t, BAR * 2, { cutoff: 1000, level: 0.1, attack: 1.0 });
-          bass(ctx, dest, chord.root, t, BAR * 2 - 0.1, 0.055);
+          pad(ctx, dest, chord.pad, t, BAR * 2, { cutoff: 1100, level: 0.17, attack: 1.0 });
+          bass(ctx, dest, chord.root, t, BAR * 2 - 0.1, 0.09);
         }
         // Sparse bells on 8ths, more often in the second half of each phrase.
         const p = s % 2 === 0 ? (cb % 8 < 4 ? 0.1 : 0.17) : 0;
